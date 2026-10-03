@@ -312,8 +312,18 @@ def _requested_action_capabilities(text: str) -> set[str]:
     required: set[str] = set()
 
     explicit_write = re.search(
-        r"\b(?:ecris|ecrire|saisis|saisir|tape|taper|ajoute|ajouter|"
-        r"insere|inserer|remplace|remplacer|write|type|append|insert|replace)\b",
+        r"\b(?:ecris|ecrire|saisis|saisir|tape|taper|write|type)\b",
+        normalized,
+    )
+    # Adding/replacing something can describe a project or business change.
+    # It is not an obligation to type into whichever application is focused.
+    # Keep this fallback guard conservative until semantic missions own it.
+    edit_verb = re.search(
+        r"\b(?:ajoute|ajouter|insere|inserer|remplace|remplacer|"
+        r"append|insert|replace)\b", normalized,
+    )
+    ui_destination = re.search(
+        r"\b(?:champ|texte|document|input|field|text|textbox)\b",
         normalized,
     )
     # French STT can turn imperative "écris" into the noun "écrivain".
@@ -323,7 +333,7 @@ def _requested_action_capabilities(text: str) -> set[str]:
         r"(?:^|\b(?:et|puis|ensuite)\s+)ecrivain\b",
         normalized,
     )
-    if explicit_write or stt_write:
+    if explicit_write or stt_write or (edit_verb and ui_destination):
         required.add("write_ui")
 
     close_requested = re.search(
