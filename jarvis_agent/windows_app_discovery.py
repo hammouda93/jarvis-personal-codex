@@ -164,7 +164,7 @@ class WindowsApplicationDiscovery:
             wanted_tokens = _tokens(wanted)
             actual_tokens = _tokens(name)
             if wanted_tokens and wanted_tokens <= actual_tokens:
-                semantic = 0.965
+                semantic = 0.910
             elif (
                 min(len(wanted), len(name)) >= 4
                 and (wanted in name or name in wanted)
