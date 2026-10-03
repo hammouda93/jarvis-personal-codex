@@ -32,6 +32,7 @@ jobs:
           jarvis_agent/windows_app_discovery.py
           jarvis_agent/ui_grounding.py
           jarvis_agent/research_broker.py
+          jarvis_agent/recovery_runtime.py
           jarvis_agent/tools.py
           jarvis_agent/native_tools.py
           jarvis_agent/windows_perception.py
@@ -42,6 +43,7 @@ jobs:
           tests.test_windows_app_discovery
           tests.test_ui_grounding
           tests.test_research_broker
+          tests.test_recovery_runtime
           -v
       - name: Run launch compatibility regressions
         run: python -m unittest tests.test_native_tools -v
