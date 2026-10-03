@@ -19,8 +19,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -54,3 +54,29 @@ jobs:
           -v
       - name: Run launch compatibility regressions
         run: python -m unittest tests.test_native_tools -v
+
+
+  full-regression:
+    name: Full historical regression (Windows)
+    needs: architecture-contracts
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.9"
+          cache: pip
+      - name: Create project virtual environment
+        shell: pwsh
+        run: python -m venv .venv
+      - name: Install project dependencies
+        shell: pwsh
+        run: |
+          .\.venv\Scripts\python.exe -m pip install --upgrade pip
+          .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+      - name: Run complete isolated unittest regression
+        shell: pwsh
+        run: >-
+          powershell -NoProfile -ExecutionPolicy Bypass
+          -File .\scripts\run_personal_agent_validation.ps1
