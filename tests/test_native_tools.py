@@ -67,13 +67,13 @@ class NativeToolRegistryTests(unittest.TestCase):
         execute_mock.assert_not_called()
 
     @patch("jarvis_agent.native_tools.execute")
-    def test_known_app_failure_falls_back_to_generic_discovery(
+    def test_generic_discovery_precedes_legacy_known_app_fallback(
         self,
         execute_mock,
     ):
         execute_mock.side_effect = [
-            ToolResult(False, "missing", "cursor missing"),
-            ToolResult(True, "ok", "Cursor.lnk"),
+            ToolResult(False, "missing", "generic missing"),
+            ToolResult(True, "ok", "legacy cursor"),
         ]
 
         result = self.registry.execute(
@@ -85,13 +85,13 @@ class NativeToolRegistryTests(unittest.TestCase):
         self.assertEqual(execute_mock.call_count, 2)
         first = execute_mock.call_args_list[0].args[0]
         second = execute_mock.call_args_list[1].args[0]
-        self.assertEqual(first.name, "app.open")
-        self.assertEqual(first.args["app"], "cursor")
-        self.assertEqual(second.name, "app.open_named")
-        self.assertEqual(second.args["query"], "Cursor")
+        self.assertEqual(first.name, "app.open_named")
+        self.assertEqual(first.args["query"], "Cursor")
+        self.assertEqual(second.name, "app.open")
+        self.assertEqual(second.args["app"], "cursor")
 
     @patch("jarvis_agent.native_tools.execute")
-    def test_notepad_alias_uses_known_app_path(self, execute_mock):
+    def test_notepad_alias_uses_generic_discovery_first(self, execute_mock):
         execute_mock.return_value = ToolResult(True, "ok", "notepad")
 
         result = self.registry.execute(
@@ -101,8 +101,8 @@ class NativeToolRegistryTests(unittest.TestCase):
 
         self.assertTrue(result.success)
         intent = execute_mock.call_args.args[0]
-        self.assertEqual(intent.name, "app.open")
-        self.assertEqual(intent.args["app"], "notepad")
+        self.assertEqual(intent.name, "app.open_named")
+        self.assertEqual(intent.args["query"], "Bloc-notes")
 
     @patch("jarvis_agent.native_tools.execute")
     def test_open_file_uses_generic_file_discovery(self, execute_mock):
