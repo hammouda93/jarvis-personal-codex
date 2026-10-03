@@ -3287,6 +3287,12 @@ class CerebrasResponsesAgent(GroqResponsesAgent):
 def build_agent_runtime(*, event_bus: MissionEventBus | None = None) -> AgentRuntime:
     provider = settings.agent_provider.lower().strip()
 
+    if event_bus is None and (
+        settings.runtime_observability_enabled
+        or settings.live_kernel_governance_enabled
+    ):
+        event_bus = MissionEventBus()
+
     tools = NATIVE_TOOLS
     recovery_tools = None
     if settings.recovery_guard_enabled:
@@ -3299,10 +3305,20 @@ def build_agent_runtime(*, event_bus: MissionEventBus | None = None) -> AgentRun
             max_same_tool_calls=settings.recovery_max_same_tool_calls,
         )
         tools = recovery_tools
+
+    governance_tools = None
+    if settings.live_kernel_governance_enabled:
+        from .live_kernel_gateway import KernelGovernedToolRegistry
+
+        governance_tools = KernelGovernedToolRegistry(
+            tools,
+            event_bus=event_bus,
+            fail_closed=settings.live_kernel_fail_closed,
+        )
+        tools = governance_tools
+
     tracing_tools = None
     journal = None
-    if event_bus is None and settings.runtime_observability_enabled:
-        event_bus = MissionEventBus()
     mission_session = None
     if settings.semantic_missions_enabled:
         import os
@@ -3361,6 +3377,11 @@ def build_agent_runtime(*, event_bus: MissionEventBus | None = None) -> AgentRun
             configured_provider=provider,
             configured_model=str(getattr(runtime, "model", "") or ""),
         )
+
+    if governance_tools is not None:
+        from .live_kernel_gateway import KernelGovernanceRuntime
+
+        runtime = KernelGovernanceRuntime(runtime, governance_tools)
 
     if recovery_tools is not None:
         from .recovery_runtime import RecoveryGuardRuntime

@@ -156,6 +156,14 @@ class Settings:
     )
     semantic_missions_enabled: bool = _bool("JARVIS_SEMANTIC_MISSIONS_ENABLED", False)
     semantic_missions_dir: str = (os.getenv("JARVIS_SEMANTIC_MISSIONS_DIR") or "").strip()
+    live_kernel_governance_enabled: bool = (
+        False
+        if compatibility_baseline
+        else _bool("JARVIS_LIVE_KERNEL_GOVERNANCE_ENABLED", True)
+    )
+    live_kernel_fail_closed: bool = _bool(
+        "JARVIS_LIVE_KERNEL_FAIL_CLOSED", True
+    )
     recovery_guard_enabled: bool = (
         False
         if compatibility_baseline
