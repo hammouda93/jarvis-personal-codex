@@ -151,6 +151,9 @@ class Settings:
         "JARVIS_STRUCTURED_TRACING_ENABLED",
         False,
     )
+    runtime_observability_enabled: bool = _bool(
+        "JARVIS_RUNTIME_OBSERVABILITY_ENABLED", False,
+    )
     model_telemetry_enabled: bool = _bool(
         "JARVIS_MODEL_TELEMETRY_ENABLED",
         False,

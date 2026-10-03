@@ -32,6 +32,7 @@ class AssistantWorker(QObject):
     detail_changed = Signal(str)
     audio_level_changed = Signal(float)
     log_line = Signal(str)
+    runtime_event = Signal(object)
     finished = Signal()
 
     def __init__(self) -> None:
@@ -40,6 +41,9 @@ class AssistantWorker(QObject):
         self._stt = build_stt()
         self._tts = ElevenLabsTTS()
         self._agent = build_agent_runtime()
+        self._runtime_bus = getattr(self._agent, "event_bus", None)
+        if self._runtime_bus is not None and settings.runtime_observability_enabled:
+            self._runtime_bus.subscribe(None, self._forward_runtime_event)
         self._conversation_language = "fr"
         self._pending_direct_follow_up = ""
         self._kernel_shadow = None
@@ -63,6 +67,9 @@ class AssistantWorker(QObject):
         self.state_changed.emit(state.value)
         self.status_changed.emit(status or STATE_LABELS[state])
         self.log_line.emit(f"[STATE] {state.value}")
+
+    def _forward_runtime_event(self, event) -> None:
+        self.runtime_event.emit(event)
 
     def _level(self, value: float) -> None:
         self.audio_level_changed.emit(max(0.0, min(1.0, float(value))))
@@ -541,4 +548,6 @@ class AssistantWorker(QObject):
                 f"Erreur · {type(exc).__name__}",
             )
         finally:
+            if self._runtime_bus is not None:
+                self._runtime_bus.unsubscribe(None, self._forward_runtime_event)
             self.finished.emit()

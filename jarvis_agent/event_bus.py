@@ -14,6 +14,10 @@ class BusEvent:
     payload: dict[str, Any]
     agent_id: str | None = None
     component: str | None = None
+    event_id: str | None = None
+    parent_event_id: str | None = None
+    success: bool | None = None
+    created_at: float | None = None
 
 
 EventHandler = Callable[[BusEvent], None]
@@ -53,14 +57,14 @@ class MissionEventBus:
         with self._lock:
             if kind is None:
                 self._wildcard = [
-                    item for item in self._wildcard if item is not handler
+                    item for item in self._wildcard if item != handler
                 ]
                 return
             key = kind.value if isinstance(kind, EventKind) else str(kind)
             self._handlers[key] = [
                 item
                 for item in self._handlers.get(key, [])
-                if item is not handler
+                if item != handler
             ]
 
     def publish(self, event: BusEvent) -> list[str]:

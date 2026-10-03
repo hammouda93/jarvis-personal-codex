@@ -14,6 +14,7 @@ from .agent_knowledge import AGENT_KNOWLEDGE
 from .config import settings
 from .connectors import CONNECTORS
 from .native_tools import AgentActionResult, NATIVE_TOOLS, NativeToolRegistry
+from .event_bus import MissionEventBus
 from .tools import normalize
 
 
@@ -3006,23 +3007,28 @@ class CerebrasResponsesAgent(GroqResponsesAgent):
                 raise secondary_error
             raise primary_error
 
-def build_agent_runtime() -> AgentRuntime:
+def build_agent_runtime(*, event_bus: MissionEventBus | None = None) -> AgentRuntime:
     provider = settings.agent_provider.lower().strip()
 
     tools = NATIVE_TOOLS
     tracing_tools = None
     journal = None
+    if event_bus is None and settings.runtime_observability_enabled:
+        event_bus = MissionEventBus()
     if settings.structured_tracing_enabled:
         from .event_journal import StructuredEventJournal
-        from .tracing_runtime import (
-            StructuredTracingRuntime,
-            TracingToolRegistry,
-        )
 
-        journal = StructuredEventJournal()
+        try:
+            journal = StructuredEventJournal()
+        except Exception as exc:
+            print(f"[TRACE] Journal unavailable: {type(exc).__name__}")
+    if journal is not None or event_bus is not None:
+        from .tracing_runtime import TracingToolRegistry
+
         tracing_tools = TracingToolRegistry(
             NATIVE_TOOLS,
             journal=journal,
+            event_bus=event_bus,
         )
         tools = tracing_tools
 
@@ -3039,12 +3045,14 @@ def build_agent_runtime() -> AgentRuntime:
             f"Agent provider non pris en charge: {settings.agent_provider}"
         )
 
-    if tracing_tools is not None and journal is not None:
+    if tracing_tools is not None:
         from .tracing_runtime import StructuredTracingRuntime
 
         return StructuredTracingRuntime(
             runtime,
             tracing_tools,
             journal=journal,
+            configured_provider=provider,
+            configured_model=str(getattr(runtime, "model", "") or ""),
         )
     return runtime

@@ -320,6 +320,14 @@ class JarvisWindow(QWidget):
         layout.addWidget(self.status_label)
         layout.addWidget(self.transcript_label)
         layout.addWidget(self.detail_label)
+        self._runtime_activity = None
+        if settings.runtime_observability_enabled:
+            from .runtime_activity_panel import RuntimeActivityPanel
+
+            self._runtime_activity = RuntimeActivityPanel(self)
+            self.orb.setMinimumHeight(300)
+            self.resize(1180, 820)
+            layout.addWidget(self._runtime_activity)
         layout.addWidget(self.hint_label)
 
         self._thread = QThread(self)
@@ -335,6 +343,10 @@ class JarvisWindow(QWidget):
         self._worker.detail_changed.connect(self.detail_label.setText)
         self._worker.audio_level_changed.connect(self.orb.set_audio_level)
         self._worker.log_line.connect(_safe_console_log)
+        if self._runtime_activity is not None:
+            self._worker.runtime_event.connect(
+                self._runtime_activity.on_event, Qt.QueuedConnection,
+            )
 
         self._thread.start()
 
