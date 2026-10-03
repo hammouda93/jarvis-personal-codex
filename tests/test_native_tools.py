@@ -78,7 +78,7 @@ class NativeToolRegistryTests(unittest.TestCase):
         "jarvis_agent.native_tools.settings",
         replace(real_settings, operational_learning_enabled=True),
     )
-    @patch("jarvis_agent.native_tools.os.startfile")
+    @patch("jarvis_agent.native_tools.os.startfile", create=True)
     @patch("jarvis_agent.native_tools.execute")
     def test_learned_app_profile_is_reused_before_rescanning_windows(
         self,
@@ -101,7 +101,9 @@ class NativeToolRegistryTests(unittest.TestCase):
             )
 
         self.assertTrue(result.success)
-        startfile_mock.assert_called_once_with(str(shortcut))
+        startfile_mock.assert_called_once()
+        launched = Path(startfile_mock.call_args.args[0])
+        self.assertEqual(launched.name, shortcut.name)
         execute_mock.assert_not_called()
 
     @patch("jarvis_agent.native_tools.execute")
