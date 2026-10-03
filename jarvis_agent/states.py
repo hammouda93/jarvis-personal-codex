@@ -13,9 +13,19 @@ class AssistantState(str, Enum):
     TRANSCRIBING = "transcribing"
     UNDERSTANDING = "understanding"
     THINKING = "thinking"
+    PLANNING = "planning"
+    ROUTING = "routing"
     ACTING = "acting"
+    OBSERVING = "observing"
+    VERIFYING = "verifying"
+    RESEARCHING = "researching"
+    RECOVERING = "recovering"
+    WAITING_APPROVAL = "waiting_approval"
+    BLOCKED = "blocked"
     SPEAKING = "speaking"
     SUCCESS = "success"
+    COMPLETED = "completed"
+    FAILED = "failed"
     ERROR = "error"
 
 
@@ -29,8 +39,18 @@ STATE_LABELS: dict[AssistantState, str] = {
     AssistantState.TRANSCRIBING: "TRANSCRIPTION",
     AssistantState.UNDERSTANDING: "COMPRÉHENSION",
     AssistantState.THINKING: "RÉFLEXION",
+    AssistantState.PLANNING: "PLANIFICATION",
+    AssistantState.ROUTING: "ROUTAGE",
     AssistantState.ACTING: "ACTION EN COURS",
+    AssistantState.OBSERVING: "OBSERVATION",
+    AssistantState.VERIFYING: "VÉRIFICATION",
+    AssistantState.RESEARCHING: "RECHERCHE EN ARRIÈRE-PLAN",
+    AssistantState.RECOVERING: "RÉCUPÉRATION",
+    AssistantState.WAITING_APPROVAL: "EN ATTENTE DE VALIDATION",
+    AssistantState.BLOCKED: "BLOQUÉ",
     AssistantState.SPEAKING: "RÉPONSE",
     AssistantState.SUCCESS: "TERMINÉ",
+    AssistantState.COMPLETED: "TERMINÉ",
+    AssistantState.FAILED: "ÉCHEC",
     AssistantState.ERROR: "ATTENTION",
 }

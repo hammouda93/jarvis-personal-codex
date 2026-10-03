@@ -46,6 +46,7 @@ class AssistantWorker(QObject):
             self._runtime_bus.subscribe(None, self._forward_runtime_event)
         self._conversation_language = "fr"
         self._pending_direct_follow_up = ""
+        self._autonomous_research_announced = False
         self._kernel_shadow = None
         self._kernel_shadow_boot_error = ""
         if settings.kernel_shadow_enabled:
@@ -88,8 +89,52 @@ class AssistantWorker(QObject):
     def _agent_phase(self, phase: str) -> None:
         if phase == "thinking":
             self._state(AssistantState.THINKING, "Jarvis réfléchit…")
+        elif phase == "planning":
+            self._state(AssistantState.PLANNING, "Planification de la mission…")
+        elif phase == "routing":
+            self._state(AssistantState.ROUTING, "Sélection de la capacité…")
         elif phase == "acting":
             self._state(AssistantState.ACTING, "Jarvis agit…")
+        elif phase == "observing":
+            self._state(AssistantState.OBSERVING, "Observation de l'état réel…")
+        elif phase == "verifying":
+            self._state(AssistantState.VERIFYING, "Vérification de la preuve…")
+        elif phase.startswith("researching_"):
+            autonomous = phase != "researching_explicit"
+            if autonomous and not self._autonomous_research_announced:
+                if phase == "researching_autonomous_after_failure":
+                    notice = (
+                        "Je n'ai pas pu résoudre ce point avec les méthodes "
+                        "locales disponibles. Je vais vérifier la solution "
+                        "en arrière-plan."
+                    )
+                else:
+                    notice = (
+                        "J'ai besoin de vérifier une information externe. "
+                        "Je lance une recherche en arrière-plan."
+                    )
+                self.log_line.emit(f"[RESEARCH] autonomous=1 reason={phase}")
+                self._speak(notice)
+                self._autonomous_research_announced = True
+            self._state(
+                AssistantState.RESEARCHING,
+                "Recherche en arrière-plan…",
+            )
+        elif phase == "recovering":
+            self._state(
+                AssistantState.RECOVERING,
+                "Diagnostic et récupération…",
+            )
+        elif phase == "waiting_approval":
+            self._state(
+                AssistantState.WAITING_APPROVAL,
+                "Validation utilisateur requise…",
+            )
+        elif phase == "blocked":
+            self._state(
+                AssistantState.BLOCKED,
+                "Mission bloquée en sécurité…",
+            )
 
     @Slot()
     def stop(self) -> None:
@@ -405,6 +450,7 @@ class AssistantWorker(QObject):
             "Compréhension de votre demande…",
         )
 
+        self._autonomous_research_announced = False
         try:
             turn = self._agent.run(
                 user_text,

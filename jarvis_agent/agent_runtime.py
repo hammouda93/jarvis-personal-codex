@@ -807,6 +807,94 @@ def _is_explicit_web_request(text: str) -> bool:
     return any(marker in normalized for marker in markers)
 
 
+_RUNTIME_OBSERVATION_TOOLS = frozenset({
+    "list_windows",
+    "inspect_active_window",
+    "ground_ui_role",
+    "observe_screen",
+})
+_RUNTIME_UI_MUTATIONS = frozenset({
+    "click_ui_element",
+    "click_visual_target",
+    "write_visual_target",
+    "write_ui_element",
+    "type_text_active_window",
+    "press_key",
+    "close_window",
+    "close_tab",
+})
+
+
+def _action_detail_dict(action: AgentActionResult) -> dict[str, Any]:
+    raw = str(getattr(action, "detail", "") or "").strip()
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(raw)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _last_action_needs_verification(
+    actions: list[AgentActionResult],
+) -> bool:
+    if not actions:
+        return False
+    action = actions[-1]
+    if not action.success or action.name not in _RUNTIME_UI_MUTATIONS:
+        return False
+    detail = _action_detail_dict(action)
+    return detail.get("verified") is not True
+
+
+def _has_failed_local_action(
+    actions: list[AgentActionResult],
+) -> bool:
+    ignored = {"research_web", "search_web"}
+    return any(
+        (not action.success) and action.name not in ignored
+        for action in actions
+    )
+
+
+def _tool_runtime_phase(
+    name: str,
+    user_text: str,
+    actions: list[AgentActionResult],
+    *,
+    verification_expected: bool = False,
+) -> str:
+    tool_name = str(name or "").strip()
+    if tool_name == "research_web":
+        if _is_explicit_web_request(user_text):
+            return "researching_explicit"
+        if _has_failed_local_action(actions):
+            return "researching_autonomous_after_failure"
+        return "researching_autonomous_external"
+    if tool_name in _RUNTIME_OBSERVATION_TOOLS:
+        if verification_expected or _last_action_needs_verification(actions):
+            return "verifying"
+        return "observing"
+    return "acting"
+
+
+def _recovery_phase_from_result(
+    result: AgentActionResult,
+) -> str | None:
+    detail = _action_detail_dict(result)
+    if detail.get("recovery_guard") is not True:
+        return None
+    reason = str(detail.get("reason") or "")
+    if reason in {
+        "turn_tool_budget_exhausted",
+        "repeated_tool_loop_detected",
+        "consecutive_failure_budget_exhausted",
+    }:
+        return "blocked"
+    return "recovering"
+
+
 def _query_matches_recent_user_context(
     query: str,
     messages: list[dict[str, Any]],
@@ -1216,7 +1304,7 @@ class OllamaToolAgent:
                 if log:
                     log(f"[AGENT_TOOL] call={name} args={arguments}")
                 if phase:
-                    phase("acting")
+                    phase(_tool_runtime_phase(name, user_text, actions))
 
                 tool_started = time.perf_counter()
                 if (
@@ -1232,6 +1320,10 @@ class OllamaToolAgent:
                         f"seconds={time.perf_counter() - tool_started:.3f}"
                     )
                 actions.append(result)
+                if phase:
+                    recovery_phase = _recovery_phase_from_result(result)
+                    if recovery_phase:
+                        phase(recovery_phase)
                 end_session = end_session or result.end_session
                 should_exit = should_exit or result.should_exit
 
@@ -1409,6 +1501,8 @@ class OpenAIResponsesAgent:
             previous = self._pending_function_response_id or previous
 
             if yes:
+                if phase:
+                    phase("acting")
                 result = self.tools.execute(
                     name,
                     arguments,
@@ -1647,9 +1741,11 @@ class OpenAIResponsesAgent:
                 if log:
                     log(f"[AGENT_TOOL] call={name} args={arguments}")
                 if phase:
-                    phase("acting")
+                    phase(_tool_runtime_phase(name, user_text, actions))
 
                 if self.tools.requires_confirmation(name):
+                    if phase:
+                        phase("waiting_approval")
                     self._pending_function_approval = {
                         "call_id": call_id,
                         "name": name,
@@ -1680,6 +1776,10 @@ class OpenAIResponsesAgent:
                 else:
                     result = self.tools.execute(name, arguments)
                 actions.append(result)
+                if phase:
+                    recovery_phase = _recovery_phase_from_result(result)
+                    if recovery_phase:
+                        phase(recovery_phase)
                 if name == "reset_conversation_context" and result.success:
                     if log:
                         log("[SESSION] semantic reset — contexte réinitialisé")
@@ -2696,7 +2796,14 @@ class GroqResponsesAgent:
                 if log:
                     log(f"[AGENT_TOOL] call={name} args={arguments}")
                 if phase:
-                    phase("acting")
+                    phase(
+                        _tool_runtime_phase(
+                            name,
+                            user_text,
+                            actions,
+                            verification_expected=ui_verification_required,
+                        )
+                    )
 
                 if self.tools.requires_confirmation(name):
                     self._pending_function_approval = {
@@ -2838,6 +2945,10 @@ class GroqResponsesAgent:
                 else:
                     result = self.tools.execute(name, arguments)
                 actions.append(result)
+                if phase:
+                    recovery_phase = _recovery_phase_from_result(result)
+                    if recovery_phase:
+                        phase(recovery_phase)
                 if (
                     settings.vision_enabled
                     and name == "inspect_active_window"

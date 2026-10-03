@@ -37,6 +37,8 @@ jobs:
           jarvis_agent/native_tools.py
           jarvis_agent/windows_perception.py
           jarvis_agent/agent_runtime.py
+          jarvis_agent/states.py
+          jarvis_agent/assistant_v3.py
       - name: Run new architecture tests
         run: >-
           python -m unittest
@@ -44,6 +46,7 @@ jobs:
           tests.test_ui_grounding
           tests.test_research_broker
           tests.test_recovery_runtime
+          tests.test_runtime_phases
           -v
       - name: Run launch compatibility regressions
         run: python -m unittest tests.test_native_tools -v
