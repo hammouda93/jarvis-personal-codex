@@ -23,6 +23,7 @@ from .windows_perception import (
     close_tab,
     close_window,
     inspect_active_window,
+    ground_ui_role,
     list_windows,
     press_key,
     type_text_active_window,
@@ -146,6 +147,38 @@ class NativeToolRegistry:
                     }
                 },
                 [],
+            ),
+            self._ollama(
+                "ground_ui_role",
+                "Résout un rôle sémantique dans le snapshot UI courant sans agir. Utilise cet outil quand la mission parle d'un champ de recherche, d'un composeur de message, d'un bouton Envoyer/Enregistrer/Confirmer, d'un résultat ou d'un élément de navigation. Un statut ambiguous/not_found interdit de deviner une ref.",
+                {
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "search_input",
+                            "message_composer",
+                            "result_item",
+                            "navigation_item",
+                            "send_button",
+                            "save_button",
+                            "editable_document",
+                            "dialog_confirm_button",
+                            "dialog_cancel_button",
+                            "tab_item",
+                            "generic_action",
+                        ],
+                        "description": "Rôle sémantique attendu dans l'interface.",
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "Titre optionnel de la fenêtre cible.",
+                    },
+                    "hint": {
+                        "type": "string",
+                        "description": "Entité ou texte attendu, par ex. le nom du contact recherché.",
+                    },
+                },
+                ["role"],
             ),
             self._ollama(
                 "observe_screen",
@@ -776,6 +809,18 @@ class NativeToolRegistry:
             title = str(args.get("title", "")).strip() or None
             result = inspect_active_window(title=title)
             self._record_inspected_app(result)
+            return AgentActionResult(
+                name=name,
+                success=result.success,
+                message=result.message,
+                detail=result.detail,
+            )
+
+        if name == "ground_ui_role":
+            role = str(args.get("role", "")).strip()
+            title = str(args.get("title", "")).strip() or None
+            hint = str(args.get("hint", "")).strip()
+            result = ground_ui_role(role, title=title, hint=hint)
             return AgentActionResult(
                 name=name,
                 success=result.success,
