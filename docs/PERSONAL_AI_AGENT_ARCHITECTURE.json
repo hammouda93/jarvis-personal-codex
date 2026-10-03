@@ -1,0 +1,1855 @@
+{
+  "method": "AST only; live authority requires code-path inspection",
+  "modules": [
+    {
+      "path": "jarvis_agent/__init__.py",
+      "lines": 1,
+      "classes": [],
+      "functions": [],
+      "imports": []
+    },
+    {
+      "path": "jarvis_agent/agent_core.py",
+      "lines": 210,
+      "classes": [
+        "CoreResult",
+        "AgentCore"
+      ],
+      "functions": [],
+      "imports": [
+        ".mission",
+        ".planner",
+        ".registry",
+        ".tools",
+        "__future__",
+        "collections",
+        "dataclasses"
+      ]
+    },
+    {
+      "path": "jarvis_agent/agent_factory.py",
+      "lines": 219,
+      "classes": [
+        "AgentLifecycle",
+        "AgentInstance",
+        "AgentProcess",
+        "AgentFactory"
+      ],
+      "functions": [],
+      "imports": [
+        ".capability_registry",
+        ".kernel_contracts",
+        "__future__",
+        "dataclasses",
+        "enum",
+        "threading",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    {
+      "path": "jarvis_agent/agent_knowledge.py",
+      "lines": 891,
+      "classes": [
+        "Skill",
+        "Lesson",
+        "AppProfile",
+        "SkillRun",
+        "AgentKnowledgeStore"
+      ],
+      "functions": [
+        "_knowledge_root",
+        "_default_db_path",
+        "_now",
+        "_json",
+        "_load_json",
+        "_normalize",
+        "_tokens",
+        "_redact",
+        "_clean_list"
+      ],
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "datetime",
+        "json",
+        "os",
+        "pathlib",
+        "re",
+        "sqlite3",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/agent_knowledge_adapter.py",
+      "lines": 256,
+      "classes": [
+        "LegacyAgentKnowledgeBackend"
+      ],
+      "functions": [],
+      "imports": [
+        ".agent_knowledge",
+        ".kernel_contracts",
+        ".knowledge_broker",
+        "__future__",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/agent_router.py",
+      "lines": 365,
+      "classes": [
+        "AgentRouteDecision",
+        "AgentRoutingContext",
+        "ContextualAgentRouteDecision",
+        "CapabilityAgentRouter"
+      ],
+      "functions": [
+        "_context_contains_any"
+      ],
+      "imports": [
+        ".capability_registry",
+        "__future__",
+        "dataclasses",
+        "re",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/agent_runtime.py",
+      "lines": 3058,
+      "classes": [
+        "AgentTurnResult",
+        "AgentRuntime",
+        "AgentRuntimeUnavailable",
+        "OllamaToolAgent",
+        "OpenAIResponsesAgent",
+        "GroqResponsesAgent",
+        "CerebrasResponsesAgent"
+      ],
+      "functions": [
+        "_effective_system_instructions",
+        "_looks_like_internal_reasoning",
+        "_looks_like_action_promise",
+        "_requested_action_capabilities",
+        "_completed_action_capabilities",
+        "_missing_requested_action_capabilities",
+        "_requests_tab_close",
+        "_requests_search_submission",
+        "_looks_like_pseudo_tool_syntax",
+        "_looks_like_unnecessary_followup",
+        "_is_explicit_memory_write_request",
+        "_looks_like_clear_operational_feedback",
+        "_action_detail_dict",
+        "_actions_have_verified_proof",
+        "_operational_knowledge_message",
+        "_record_operational_run",
+        "_blocked_memory_write_result",
+        "_blocked_persistent_recall_for_current_context",
+        "_looks_like_memory_permission_prompt",
+        "_is_explicit_web_request",
+        "_query_matches_recent_user_context",
+        "_blocked_contextual_web_search_result",
+        "_looks_mostly_english",
+        "_visible_text",
+        "_filter_optional_ollama_tools",
+        "_filter_optional_openai_tools",
+        "build_agent_runtime"
+      ],
+      "imports": [
+        ".agent_knowledge",
+        ".config",
+        ".connectors",
+        ".event_bus",
+        ".event_journal",
+        ".native_tools",
+        ".tools",
+        ".tracing_runtime",
+        "__future__",
+        "dataclasses",
+        "difflib",
+        "json",
+        "openai",
+        "re",
+        "socket",
+        "time",
+        "typing",
+        "urllib.error",
+        "urllib.request"
+      ]
+    },
+    {
+      "path": "jarvis_agent/approval_manager.py",
+      "lines": 281,
+      "classes": [
+        "ApprovalStatus",
+        "ApprovalRequest",
+        "HumanApprovalManager"
+      ],
+      "functions": [
+        "_default_path"
+      ],
+      "imports": [
+        ".kernel_contracts",
+        "__future__",
+        "dataclasses",
+        "enum",
+        "os",
+        "pathlib",
+        "sqlite3",
+        "threading",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    {
+      "path": "jarvis_agent/assistant.py",
+      "lines": 183,
+      "classes": [
+        "AssistantWorker"
+      ],
+      "functions": [],
+      "imports": [
+        ".audio",
+        ".config",
+        ".states",
+        ".stt",
+        ".tools",
+        ".tts",
+        "PySide6.QtCore",
+        "__future__",
+        "threading",
+        "time",
+        "traceback"
+      ]
+    },
+    {
+      "path": "jarvis_agent/assistant_v2.py",
+      "lines": 298,
+      "classes": [
+        "AssistantWorker"
+      ],
+      "functions": [],
+      "imports": [
+        ".agent_core",
+        ".audio",
+        ".config",
+        ".language",
+        ".recognition",
+        ".states",
+        ".stt",
+        ".tools",
+        ".tts",
+        "PySide6.QtCore",
+        "__future__",
+        "threading",
+        "time",
+        "traceback"
+      ]
+    },
+    {
+      "path": "jarvis_agent/assistant_v3.py",
+      "lines": 553,
+      "classes": [
+        "AssistantWorker"
+      ],
+      "functions": [],
+      "imports": [
+        ".agent_runtime",
+        ".audio",
+        ".config",
+        ".language",
+        ".recognition",
+        ".shadow_kernel_runtime",
+        ".states",
+        ".stt",
+        ".tools",
+        ".tts",
+        "PySide6.QtCore",
+        "__future__",
+        "re",
+        "threading",
+        "time",
+        "traceback"
+      ]
+    },
+    {
+      "path": "jarvis_agent/audio.py",
+      "lines": 339,
+      "classes": [],
+      "functions": [
+        "rms_mono",
+        "normalized_level",
+        "_audio_devices",
+        "_resolve_device",
+        "input_device_index",
+        "output_device_index",
+        "block_samples",
+        "wait_for_double_clap",
+        "record_utterance",
+        "save_temp_wav"
+      ],
+      "imports": [
+        ".config",
+        "__future__",
+        "collections",
+        "numpy",
+        "os",
+        "pathlib",
+        "sounddevice",
+        "tempfile",
+        "threading",
+        "time",
+        "typing",
+        "wave"
+      ]
+    },
+    {
+      "path": "jarvis_agent/brain.py",
+      "lines": 474,
+      "classes": [
+        "AgentDecision",
+        "ToolDecisionValidation",
+        "AIProvider",
+        "AIProviderUnavailable",
+        "OllamaProvider"
+      ],
+      "functions": [
+        "_contains_any",
+        "_explicit_action_requested",
+        "_tool_arguments_are_grounded",
+        "_candidate_intent",
+        "validate_tool_decision",
+        "decision_to_intent",
+        "build_ai_provider"
+      ],
+      "imports": [
+        ".config",
+        ".tools",
+        "__future__",
+        "collections",
+        "dataclasses",
+        "json",
+        "typing",
+        "urllib.error",
+        "urllib.parse",
+        "urllib.request"
+      ]
+    },
+    {
+      "path": "jarvis_agent/capabilities.py",
+      "lines": 131,
+      "classes": [
+        "MissingCapability"
+      ],
+      "functions": [
+        "detect_missing_capability",
+        "confirmation_prompt",
+        "is_affirmative",
+        "is_negative"
+      ],
+      "imports": [
+        ".language",
+        ".tools",
+        "__future__",
+        "dataclasses"
+      ]
+    },
+    {
+      "path": "jarvis_agent/capability_registry.py",
+      "lines": 340,
+      "classes": [
+        "RegisteredCapability",
+        "CapabilityRegistry"
+      ],
+      "functions": [
+        "build_default_registry"
+      ],
+      "imports": [
+        ".kernel_contracts",
+        "__future__",
+        "dataclasses",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/component_registry.py",
+      "lines": 211,
+      "classes": [
+        "ComponentSpec",
+        "ComponentRegistry"
+      ],
+      "functions": [
+        "build_default_component_registry"
+      ],
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "pathlib",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/config.py",
+      "lines": 297,
+      "classes": [
+        "Settings"
+      ],
+      "functions": [
+        "_float",
+        "_int",
+        "_bool"
+      ],
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "dotenv",
+        "os",
+        "pathlib"
+      ]
+    },
+    {
+      "path": "jarvis_agent/connector_gateway.py",
+      "lines": 142,
+      "classes": [
+        "ConnectorResult",
+        "ConnectorAdapter",
+        "ConnectorGateway"
+      ],
+      "functions": [],
+      "imports": [
+        ".connector_registry",
+        ".kernel_contracts",
+        "__future__",
+        "dataclasses",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/connector_registry.py",
+      "lines": 267,
+      "classes": [
+        "ConnectorBackend",
+        "ConnectorCapability",
+        "ConnectorSpec",
+        "ConnectorRegistry"
+      ],
+      "functions": [
+        "build_default_connector_registry"
+      ],
+      "imports": [
+        ".kernel_contracts",
+        "__future__",
+        "dataclasses",
+        "enum",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/connectors.py",
+      "lines": 193,
+      "classes": [
+        "MCPConnector",
+        "ConnectorRegistry"
+      ],
+      "functions": [],
+      "imports": [
+        ".config",
+        "__future__",
+        "dataclasses",
+        "json",
+        "os",
+        "pathlib",
+        "re",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/context_broker.py",
+      "lines": 129,
+      "classes": [
+        "ContextItem",
+        "ContextSelection",
+        "ContextBroker"
+      ],
+      "functions": [],
+      "imports": [
+        ".kernel_contracts",
+        "__future__",
+        "dataclasses",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/context_injector.py",
+      "lines": 136,
+      "classes": [
+        "AgentContextRequest",
+        "AgentContextResult",
+        "AgentContextInjector"
+      ],
+      "functions": [],
+      "imports": [
+        ".capability_registry",
+        ".context_broker",
+        ".kernel_contracts",
+        ".knowledge_broker",
+        ".knowledge_policy",
+        ".mission_context_store",
+        "__future__",
+        "dataclasses",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/correction_store.py",
+      "lines": 228,
+      "classes": [
+        "CorrectionCandidateStore"
+      ],
+      "functions": [
+        "_default_path"
+      ],
+      "imports": [
+        ".kernel_contracts",
+        "__future__",
+        "json",
+        "os",
+        "pathlib",
+        "sqlite3",
+        "threading",
+        "time",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/dev_supervisor.py",
+      "lines": 99,
+      "classes": [
+        "FailureKind",
+        "FailureAssessment"
+      ],
+      "functions": [
+        "candidate_from_assessment",
+        "validation_destination"
+      ],
+      "imports": [
+        ".kernel_contracts",
+        "__future__",
+        "dataclasses",
+        "enum",
+        "typing",
+        "uuid"
+      ]
+    },
+    {
+      "path": "jarvis_agent/event_bus.py",
+      "lines": 93,
+      "classes": [
+        "BusEvent",
+        "MissionEventBus"
+      ],
+      "functions": [],
+      "imports": [
+        ".kernel_contracts",
+        "__future__",
+        "dataclasses",
+        "threading",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/event_journal.py",
+      "lines": 316,
+      "classes": [
+        "StructuredEventJournal"
+      ],
+      "functions": [
+        "_default_path",
+        "_safe_value"
+      ],
+      "imports": [
+        ".kernel_contracts",
+        "__future__",
+        "json",
+        "os",
+        "pathlib",
+        "re",
+        "sqlite3",
+        "threading",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    {
+      "path": "jarvis_agent/execution_managers.py",
+      "lines": 427,
+      "classes": [
+        "ManagerExecutionResult",
+        "ExecutionManager",
+        "ToolExecutionManager",
+        "ConnectorExecutionManager",
+        "MemoryExecutionManager",
+        "StorageExecutionManager",
+        "TestExecutionManager",
+        "ReplayExecutionManager",
+        "CallbackExecutionManager",
+        "ExecutionManagerRegistry"
+      ],
+      "functions": [],
+      "imports": [
+        ".connector_gateway",
+        ".kernel_contracts",
+        ".knowledge_broker",
+        ".regression_runner",
+        ".replay_sandbox",
+        ".tool_gateway",
+        ".workspace_storage",
+        "__future__",
+        "dataclasses",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/headless.py",
+      "lines": 107,
+      "classes": [],
+      "functions": [
+        "run_headless"
+      ],
+      "imports": [
+        ".audio",
+        ".config",
+        ".language",
+        ".recognition",
+        ".stt",
+        ".tools",
+        ".tts",
+        "__future__",
+        "threading",
+        "time",
+        "traceback"
+      ]
+    },
+    {
+      "path": "jarvis_agent/incident_bundle.py",
+      "lines": 159,
+      "classes": [
+        "IncidentBundle",
+        "IncidentBundleBuilder"
+      ],
+      "functions": [],
+      "imports": [
+        ".component_registry",
+        ".event_journal",
+        "__future__",
+        "dataclasses",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/kernel_cli.py",
+      "lines": 196,
+      "classes": [],
+      "functions": [
+        "_parser",
+        "main"
+      ],
+      "imports": [
+        ".approval_manager",
+        ".capability_registry",
+        ".component_registry",
+        ".config",
+        ".connector_registry",
+        ".correction_store",
+        ".event_journal",
+        ".incident_bundle",
+        ".kernel_request_store",
+        ".mission_context_store",
+        ".model_catalog",
+        ".model_telemetry",
+        ".regression_registry",
+        "__future__",
+        "argparse",
+        "json"
+      ]
+    },
+    {
+      "path": "jarvis_agent/kernel_contracts.py",
+      "lines": 250,
+      "classes": [
+        "MissionStatus",
+        "EventKind",
+        "KnowledgeScope",
+        "PromotionTarget",
+        "RiskLevel",
+        "SharingPolicy",
+        "SyscallKind",
+        "SyscallStatus",
+        "CapabilitySpec",
+        "AgentManifest",
+        "MissionContext",
+        "KnowledgeIdentity",
+        "KernelRequest",
+        "KernelResponse",
+        "CorrectionCandidate"
+      ],
+      "functions": [],
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "enum",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/kernel_dispatcher.py",
+      "lines": 96,
+      "classes": [
+        "DispatchResult",
+        "KernelDispatcher"
+      ],
+      "functions": [],
+      "imports": [
+        ".execution_managers",
+        ".kernel_contracts",
+        ".kernel_service",
+        "__future__",
+        "dataclasses",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/kernel_policy.py",
+      "lines": 92,
+      "classes": [
+        "AuthorizationDecision",
+        "KernelPolicy"
+      ],
+      "functions": [],
+      "imports": [
+        ".capability_registry",
+        ".kernel_contracts",
+        "__future__",
+        "dataclasses",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/kernel_request_store.py",
+      "lines": 243,
+      "classes": [
+        "KernelRequestStore"
+      ],
+      "functions": [
+        "_default_path"
+      ],
+      "imports": [
+        ".kernel_contracts",
+        "__future__",
+        "json",
+        "os",
+        "pathlib",
+        "sqlite3",
+        "threading",
+        "time",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/kernel_service.py",
+      "lines": 395,
+      "classes": [
+        "KernelSubmission",
+        "JarvisKernel"
+      ],
+      "functions": [],
+      "imports": [
+        ".approval_manager",
+        ".event_bus",
+        ".event_journal",
+        ".kernel_contracts",
+        ".kernel_policy",
+        ".kernel_request_store",
+        ".mission_scheduler",
+        "__future__",
+        "dataclasses",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/kernel_stack.py",
+      "lines": 166,
+      "classes": [
+        "PassiveKernelStack"
+      ],
+      "functions": [
+        "build_passive_kernel_stack"
+      ],
+      "imports": [
+        ".agent_factory",
+        ".agent_knowledge",
+        ".agent_knowledge_adapter",
+        ".agent_router",
+        ".approval_manager",
+        ".capability_registry",
+        ".config",
+        ".connector_gateway",
+        ".context_broker",
+        ".context_injector",
+        ".correction_store",
+        ".event_bus",
+        ".event_journal",
+        ".execution_managers",
+        ".kernel_dispatcher",
+        ".kernel_request_store",
+        ".kernel_service",
+        ".knowledge_broker",
+        ".mission_context_store",
+        ".mission_orchestrator",
+        ".model_catalog",
+        ".model_router",
+        ".model_telemetry",
+        ".task_graph_store",
+        ".tool_gateway",
+        "__future__",
+        "dataclasses",
+        "pathlib"
+      ]
+    },
+    {
+      "path": "jarvis_agent/knowledge_broker.py",
+      "lines": 146,
+      "classes": [
+        "ScopedKnowledgeRecord",
+        "ScopedKnowledgeBackend",
+        "KnowledgeBroker",
+        "InMemoryKnowledgeBackend"
+      ],
+      "functions": [],
+      "imports": [
+        ".kernel_contracts",
+        ".knowledge_policy",
+        ".write_barrier",
+        "__future__",
+        "dataclasses",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/knowledge_cli.py",
+      "lines": 88,
+      "classes": [],
+      "functions": [
+        "main"
+      ],
+      "imports": [
+        ".agent_knowledge",
+        "__future__",
+        "argparse",
+        "json",
+        "pathlib"
+      ]
+    },
+    {
+      "path": "jarvis_agent/knowledge_policy.py",
+      "lines": 132,
+      "classes": [
+        "KnowledgePrincipal",
+        "KnowledgeAccessPolicy"
+      ],
+      "functions": [],
+      "imports": [
+        ".kernel_contracts",
+        "__future__",
+        "dataclasses"
+      ]
+    },
+    {
+      "path": "jarvis_agent/language.py",
+      "lines": 168,
+      "classes": [],
+      "functions": [
+        "normalize_language",
+        "tool_message",
+        "repeat_prompt",
+        "no_speech_prompt",
+        "cancellation_prompt",
+        "ai_unavailable_prompt",
+        "capability_unavailable_prompt",
+        "action_mismatch_prompt"
+      ],
+      "imports": [
+        ".tools",
+        "__future__",
+        "datetime"
+      ]
+    },
+    {
+      "path": "jarvis_agent/llm_manager.py",
+      "lines": 218,
+      "classes": [
+        "LLMAdapter",
+        "LLMExecutionAttempt",
+        "RoutedLLMExecutionManager"
+      ],
+      "functions": [],
+      "imports": [
+        ".execution_managers",
+        ".kernel_contracts",
+        ".model_router",
+        ".model_telemetry",
+        "__future__",
+        "dataclasses",
+        "time",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/local_rpc_security.py",
+      "lines": 66,
+      "classes": [
+        "LocalRPCPolicy",
+        "CapabilityTokenAuthority"
+      ],
+      "functions": [],
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "hmac",
+        "ipaddress",
+        "secrets",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/mcp_connector_adapter.py",
+      "lines": 81,
+      "classes": [
+        "MCPTransport",
+        "MCPConnectorAdapter"
+      ],
+      "functions": [],
+      "imports": [
+        ".connector_gateway",
+        ".connector_registry",
+        "__future__",
+        "dataclasses",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/memory.py",
+      "lines": 135,
+      "classes": [
+        "MemoryItem",
+        "LocalMemory"
+      ],
+      "functions": [
+        "_default_db_path"
+      ],
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "datetime",
+        "os",
+        "pathlib",
+        "re",
+        "sqlite3"
+      ]
+    },
+    {
+      "path": "jarvis_agent/mission.py",
+      "lines": 169,
+      "classes": [
+        "MissionStatus",
+        "StepStatus",
+        "MissionStep",
+        "Mission",
+        "MissionOutcome",
+        "MissionEngine"
+      ],
+      "functions": [],
+      "imports": [
+        ".registry",
+        ".tools",
+        "__future__",
+        "dataclasses",
+        "enum",
+        "typing",
+        "uuid"
+      ]
+    },
+    {
+      "path": "jarvis_agent/mission_context_store.py",
+      "lines": 212,
+      "classes": [
+        "MissionContextStore"
+      ],
+      "functions": [
+        "_default_path"
+      ],
+      "imports": [
+        ".kernel_contracts",
+        "__future__",
+        "json",
+        "os",
+        "pathlib",
+        "sqlite3",
+        "threading",
+        "time",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/mission_orchestrator.py",
+      "lines": 315,
+      "classes": [
+        "OrchestrationStep",
+        "MissionOrchestrator"
+      ],
+      "functions": [],
+      "imports": [
+        ".kernel_contracts",
+        ".kernel_service",
+        ".mission_context_store",
+        ".task_graph",
+        ".task_graph_store",
+        "__future__",
+        "dataclasses",
+        "uuid"
+      ]
+    },
+    {
+      "path": "jarvis_agent/mission_scheduler.py",
+      "lines": 305,
+      "classes": [
+        "_QueueItem",
+        "ScheduledRequest",
+        "MissionScheduler"
+      ],
+      "functions": [],
+      "imports": [
+        ".kernel_contracts",
+        "__future__",
+        "dataclasses",
+        "heapq",
+        "threading",
+        "time",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/model_catalog.py",
+      "lines": 128,
+      "classes": [
+        "CatalogEntry",
+        "CurrentModelCatalog"
+      ],
+      "functions": [],
+      "imports": [
+        ".config",
+        ".model_router",
+        "__future__",
+        "dataclasses"
+      ]
+    },
+    {
+      "path": "jarvis_agent/model_router.py",
+      "lines": 193,
+      "classes": [
+        "ModelCandidate",
+        "RouteRequest",
+        "RouteDecision",
+        "_CircuitState",
+        "LightweightModelRouter"
+      ],
+      "functions": [],
+      "imports": [
+        ".model_telemetry",
+        "__future__",
+        "dataclasses",
+        "time",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/model_telemetry.py",
+      "lines": 163,
+      "classes": [
+        "ModelTelemetryStore"
+      ],
+      "functions": [
+        "_default_path"
+      ],
+      "imports": [
+        "__future__",
+        "json",
+        "os",
+        "pathlib",
+        "sqlite3",
+        "threading",
+        "time",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/ms_football_bridge.py",
+      "lines": 116,
+      "classes": [
+        "MSFootballBridgeResult",
+        "MSFootballBridge"
+      ],
+      "functions": [],
+      "imports": [
+        ".config",
+        "__future__",
+        "dataclasses",
+        "json",
+        "typing",
+        "urllib.error",
+        "urllib.request"
+      ]
+    },
+    {
+      "path": "jarvis_agent/native_tools.py",
+      "lines": 1254,
+      "classes": [
+        "AgentActionResult",
+        "NativeToolRegistry"
+      ],
+      "functions": [],
+      "imports": [
+        ".agent_knowledge",
+        ".config",
+        ".memory",
+        ".ms_football_bridge",
+        ".screen_vision",
+        ".tools",
+        ".windows_perception",
+        "__future__",
+        "dataclasses",
+        "json",
+        "os",
+        "pathlib",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/planner.py",
+      "lines": 233,
+      "classes": [
+        "PlannedStep",
+        "PlanDecision",
+        "Planner",
+        "PlannerUnavailable",
+        "OllamaPlanner"
+      ],
+      "functions": [
+        "build_planner"
+      ],
+      "imports": [
+        ".config",
+        ".registry",
+        "__future__",
+        "dataclasses",
+        "json",
+        "typing",
+        "urllib.error",
+        "urllib.request"
+      ]
+    },
+    {
+      "path": "jarvis_agent/plugin_loader.py",
+      "lines": 69,
+      "classes": [
+        "PluginRecord",
+        "PluginCatalog"
+      ],
+      "functions": [],
+      "imports": [
+        ".plugin_manifest",
+        "__future__",
+        "dataclasses",
+        "json",
+        "pathlib",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/plugin_manifest.py",
+      "lines": 145,
+      "classes": [
+        "PluginManifest"
+      ],
+      "functions": [],
+      "imports": [
+        ".kernel_contracts",
+        "__future__",
+        "dataclasses",
+        "re",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/plugin_policy.py",
+      "lines": 87,
+      "classes": [
+        "PluginPermissionDecision",
+        "PluginPermissionPolicy"
+      ],
+      "functions": [],
+      "imports": [
+        ".plugin_manifest",
+        "__future__",
+        "dataclasses",
+        "pathlib",
+        "urllib.parse"
+      ]
+    },
+    {
+      "path": "jarvis_agent/promotion_gate.py",
+      "lines": 125,
+      "classes": [
+        "PromotionDecision",
+        "CorrectionPromotionGate"
+      ],
+      "functions": [],
+      "imports": [
+        ".dev_supervisor",
+        ".kernel_contracts",
+        ".supervisor_validation",
+        "__future__",
+        "dataclasses",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/recognition.py",
+      "lines": 192,
+      "classes": [],
+      "functions": [
+        "_is_pc_action",
+        "_language_code",
+        "_candidate_score",
+        "_needs_multilingual_retry",
+        "recognize_command"
+      ],
+      "imports": [
+        ".config",
+        ".stt",
+        ".tools",
+        "__future__",
+        "numpy",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/registry.py",
+      "lines": 206,
+      "classes": [
+        "CapabilitySpec",
+        "PreparedTool",
+        "ToolRegistry"
+      ],
+      "functions": [],
+      "imports": [
+        ".tools",
+        "__future__",
+        "dataclasses",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/regression_registry.py",
+      "lines": 219,
+      "classes": [
+        "RegressionSpec",
+        "RegressionRegistry"
+      ],
+      "functions": [
+        "_path_matches",
+        "build_default_regression_registry"
+      ],
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "pathlib",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/regression_runner.py",
+      "lines": 140,
+      "classes": [
+        "RegressionRunResult",
+        "RegressionRunner"
+      ],
+      "functions": [],
+      "imports": [
+        ".regression_registry",
+        "__future__",
+        "dataclasses",
+        "pathlib",
+        "shlex",
+        "subprocess",
+        "time",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/replay_adapter.py",
+      "lines": 99,
+      "classes": [
+        "ReplayTransport",
+        "MCPReplaySandboxAdapter"
+      ],
+      "functions": [],
+      "imports": [
+        ".replay_sandbox",
+        "__future__",
+        "dataclasses",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/replay_sandbox.py",
+      "lines": 171,
+      "classes": [
+        "ReplayStatus",
+        "ReplayAction",
+        "ReplayPlan",
+        "ReplayResult",
+        "ReplaySandbox",
+        "ReplayRunner"
+      ],
+      "functions": [],
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "enum",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/runtime_activity.py",
+      "lines": 90,
+      "classes": [
+        "ObservedToolCall",
+        "RuntimeActivityState"
+      ],
+      "functions": [],
+      "imports": [
+        ".event_bus",
+        ".kernel_contracts",
+        "__future__",
+        "collections",
+        "dataclasses",
+        "math",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/runtime_activity_panel.py",
+      "lines": 70,
+      "classes": [
+        "RuntimeActivityPanel"
+      ],
+      "functions": [],
+      "imports": [
+        ".event_bus",
+        ".runtime_activity",
+        "PySide6.QtCore",
+        "PySide6.QtWidgets",
+        "__future__"
+      ]
+    },
+    {
+      "path": "jarvis_agent/scoped_knowledge_store.py",
+      "lines": 168,
+      "classes": [
+        "SQLiteScopedKnowledgeBackend"
+      ],
+      "functions": [
+        "_default_path"
+      ],
+      "imports": [
+        ".kernel_contracts",
+        ".knowledge_broker",
+        "__future__",
+        "json",
+        "os",
+        "pathlib",
+        "sqlite3",
+        "threading"
+      ]
+    },
+    {
+      "path": "jarvis_agent/screen_vision.py",
+      "lines": 566,
+      "classes": [
+        "ScreenObservation"
+      ],
+      "functions": [
+        "_vision_endpoint",
+        "_is_local_endpoint",
+        "_extract_json_object",
+        "_call_local_vision",
+        "_normalized_box",
+        "_capture_window_bytes",
+        "_save_debug_evidence",
+        "observe_screen",
+        "locate_visual_target",
+        "click_visual_target",
+        "write_visual_target"
+      ],
+      "imports": [
+        ".config",
+        ".windows_perception",
+        "PIL",
+        "__future__",
+        "base64",
+        "dataclasses",
+        "datetime",
+        "io",
+        "json",
+        "os",
+        "pathlib",
+        "pywinauto",
+        "re",
+        "time",
+        "typing",
+        "urllib.parse",
+        "urllib.request",
+        "win32clipboard"
+      ]
+    },
+    {
+      "path": "jarvis_agent/secret_provider.py",
+      "lines": 134,
+      "classes": [
+        "SecretRef",
+        "SecretProvider",
+        "EnvironmentSecretProvider",
+        "WindowsCredentialSecretProvider",
+        "CompositeSecretProvider"
+      ],
+      "functions": [
+        "default_secret_provider"
+      ],
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "os",
+        "typing",
+        "win32cred"
+      ]
+    },
+    {
+      "path": "jarvis_agent/shadow_kernel_cli.py",
+      "lines": 98,
+      "classes": [],
+      "functions": [
+        "_parser",
+        "_graph_payload",
+        "main"
+      ],
+      "imports": [
+        ".config",
+        ".kernel_contracts",
+        ".shadow_kernel_runtime",
+        "__future__",
+        "argparse",
+        "json"
+      ]
+    },
+    {
+      "path": "jarvis_agent/shadow_kernel_runtime.py",
+      "lines": 615,
+      "classes": [
+        "ShadowObservation",
+        "ShadowSupervisorAssessment",
+        "KernelShadowObserver"
+      ],
+      "functions": [
+        "_default_shadow_dir"
+      ],
+      "imports": [
+        ".agent_router",
+        ".config",
+        ".kernel_contracts",
+        ".kernel_stack",
+        ".task_graph",
+        "__future__",
+        "dataclasses",
+        "os",
+        "pathlib",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/states.py",
+      "lines": 36,
+      "classes": [
+        "AssistantState"
+      ],
+      "functions": [],
+      "imports": [
+        "__future__",
+        "enum"
+      ]
+    },
+    {
+      "path": "jarvis_agent/stt.py",
+      "lines": 305,
+      "classes": [
+        "TranscriptResult",
+        "LocalWhisperSTT",
+        "GroqWhisperSTT"
+      ],
+      "functions": [
+        "build_stt"
+      ],
+      "imports": [
+        ".audio",
+        ".config",
+        ".tools",
+        "__future__",
+        "collections",
+        "dataclasses",
+        "faster_whisper",
+        "numpy",
+        "openai"
+      ]
+    },
+    {
+      "path": "jarvis_agent/supervisor_planner.py",
+      "lines": 103,
+      "classes": [
+        "SupervisorPlan",
+        "SupervisorPlanner"
+      ],
+      "functions": [],
+      "imports": [
+        ".component_registry",
+        ".dev_supervisor",
+        ".kernel_contracts",
+        ".regression_registry",
+        "__future__",
+        "dataclasses",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/supervisor_validation.py",
+      "lines": 77,
+      "classes": [
+        "SupervisorValidationState",
+        "SupervisorValidationGate"
+      ],
+      "functions": [],
+      "imports": [
+        ".kernel_contracts",
+        ".supervisor_planner",
+        "__future__",
+        "dataclasses",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/task_graph.py",
+      "lines": 166,
+      "classes": [
+        "TaskStatus",
+        "TaskNode",
+        "MissionTaskGraph"
+      ],
+      "functions": [],
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "enum",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/task_graph_store.py",
+      "lines": 131,
+      "classes": [
+        "TaskGraphStore"
+      ],
+      "functions": [
+        "_default_path"
+      ],
+      "imports": [
+        ".task_graph",
+        "__future__",
+        "json",
+        "os",
+        "pathlib",
+        "sqlite3",
+        "threading",
+        "time"
+      ]
+    },
+    {
+      "path": "jarvis_agent/tool_gateway.py",
+      "lines": 80,
+      "classes": [
+        "ToolGatewayResult",
+        "ScopedToolGateway"
+      ],
+      "functions": [],
+      "imports": [
+        ".capability_registry",
+        "__future__",
+        "dataclasses",
+        "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/tools.py",
+      "lines": 1036,
+      "classes": [
+        "ToolIntent",
+        "ToolResult"
+      ],
+      "functions": [
+        "normalize",
+        "_search_query_from_command",
+        "route",
+        "_spawn",
+        "_chrome_candidates",
+        "_chrome_executable",
+        "_chrome_profile_directory",
+        "_launch_chrome",
+        "_open_browser_url",
+        "_open_application",
+        "_normalize_path_name",
+        "_app_search_roots",
+        "application_speech_hints",
+        "_app_binary_roots",
+        "_find_named_app",
+        "_file_search_roots",
+        "_find_named_file",
+        "_folder_search_roots",
+        "_find_named_folder",
+        "execute"
+      ],
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "datetime",
+        "difflib",
+        "functools",
+        "json",
+        "os",
+        "pathlib",
+        "re",
+        "shutil",
+        "subprocess",
+        "typing",
+        "unicodedata",
+        "urllib.parse",
+        "webbrowser"
+      ]
+    },
+    {
+      "path": "jarvis_agent/tracing_runtime.py",
+      "lines": 217,
+      "classes": [
+        "TracingToolRegistry",
+        "StructuredTracingRuntime"
+      ],
+      "functions": [
+        "_verification_evidence"
+      ],
+      "imports": [
+        ".event_bus",
+        ".event_journal",
+        ".kernel_contracts",
+        "__future__",
+        "json",
+        "threading",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    },
+    {
+      "path": "jarvis_agent/tts.py",
+      "lines": 206,
+      "classes": [
+        "ElevenLabsTTS"
+      ],
+      "functions": [],
+      "imports": [
+        ".audio",
+        ".config",
+        "__future__",
+        "elevenlabs.client",
+        "hashlib",
+        "numpy",
+        "pathlib",
+        "pythoncom",
+        "sounddevice",
+        "typing",
+        "wave",
+        "win32com.client"
+      ]
+    },
+    {
+      "path": "jarvis_agent/ui.py",
+      "lines": 429,
+      "classes": [
+        "ReactiveOrb",
+        "JarvisWindow"
+      ],
+      "functions": [
+        "_safe_console_log",
+        "run_ui"
+      ],
+      "imports": [
+        ".assistant_v3",
+        ".config",
+        ".runtime_activity_panel",
+        ".states",
+        "PySide6.QtCore",
+        "PySide6.QtGui",
+        "PySide6.QtWidgets",
+        "__future__",
+        "collections",
+        "math",
+        "random",
+        "sys"
+      ]
+    },
+    {
+      "path": "jarvis_agent/windows_perception.py",
+      "lines": 1959,
+      "classes": [
+        "UIActionResult"
+      ],
+      "functions": [
+        "_desktop",
+        "_send_keys",
+        "_rect_tuple",
+        "_element_name",
+        "_control_type",
+        "_automation_id",
+        "_is_visible",
+        "_is_enabled",
+        "_is_assistant_window",
+        "_title_app_hint",
+        "_window_identity_tokens",
+        "_window_identity_score",
+        "_window_by_title",
+        "_active_window",
+        "_compact_window",
+        "_control_value",
+        "_compact_control",
+        "_json",
+        "_native_visible_windows",
+        "_native_process_name",
+        "_native_window_candidates",
+        "_native_target_window",
+        "_uia_window_from_handle",
+        "_uia_window_from_native_with_retry",
+        "_native_compact_window",
+        "_native_only_inspection",
+        "list_windows",
+        "_nearest_text_label",
+        "inspect_active_window",
+        "_score_name",
+        "_rank_wrappers",
+        "_find_active_element",
+        "_snapshot_element",
+        "click_ui_element",
+        "activate_window",
+        "close_window",
+        "_is_selected_tab",
+        "close_tab",
+        "_editable_target",
+        "_type_text_into_focused_control",
+        "write_ui_element",
+        "type_text_active_window",
+        "press_key"
+      ],
+      "imports": [
+        ".tools",
+        "__future__",
+        "ctypes",
+        "dataclasses",
+        "difflib",
+        "json",
+        "os",
+        "pywinauto",
+        "re",
+        "time",
+        "typing",
+        "win32clipboard"
+      ]
+    },
+    {
+      "path": "jarvis_agent/workspace_storage.py",
+      "lines": 128,
+      "classes": [
+        "WorkspaceArtifact",
+        "WorkspaceStorage"
+      ],
+      "functions": [
+        "_default_root"
+      ],
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "os",
+        "pathlib",
+        "shutil"
+      ]
+    },
+    {
+      "path": "jarvis_agent/write_barrier.py",
+      "lines": 72,
+      "classes": [
+        "ScopedWriteBarrier"
+      ],
+      "functions": [],
+      "imports": [
+        "__future__",
+        "collections",
+        "threading",
+        "time"
+      ]
+    }
+  ],
+  "test_methods": {
+    "test_agent_core.py": 4,
+    "test_agent_knowledge.py": 9,
+    "test_agent_runtime.py": 60,
+    "test_architecture_extensions.py": 17,
+    "test_assistant_v3.py": 6,
+    "test_brain.py": 13,
+    "test_capabilities.py": 5,
+    "test_connectors.py": 4,
+    "test_dialog_capabilities.py": 1,
+    "test_kernel_foundations.py": 53,
+    "test_language.py": 4,
+    "test_memory.py": 4,
+    "test_mission.py": 3,
+    "test_native_tools.py": 19,
+    "test_recognition_retry.py": 1,
+    "test_registry.py": 4,
+    "test_runtime_observability.py": 24,
+    "test_screen_vision.py": 7,
+    "test_stt.py": 2,
+    "test_stt_filters.py": 2,
+    "test_tools.py": 26,
+    "test_ui_logging.py": 1,
+    "test_windows_perception.py": 23
+  },
+  "total_test_methods": 292
+}
