@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import sqlite3
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Any
@@ -59,8 +60,9 @@ class NativeToolRegistry:
     as VLC, Baristas or a future application/folder remain arguments.
     """
 
-    def __init__(self, knowledge=None) -> None:
+    def __init__(self, knowledge=None, *, memory=None) -> None:
         self.knowledge = knowledge or AGENT_KNOWLEDGE
+        self.memory = memory if memory is not None else LOCAL_MEMORY
         self._last_app_hint = ""
 
     def ollama_tools(self) -> list[dict[str, Any]]:
@@ -1081,19 +1083,32 @@ class NativeToolRegistry:
             tags = str(args.get("tags", "")).strip()
             if not content:
                 return self._error(name, "L'information à mémoriser est vide.")
-            item = LOCAL_MEMORY.remember(content, tags=tags)
+            try:
+                item = self.memory.remember(content, tags=tags)
+                persisted = self.memory.get(item.id)
+                if persisted != item:
+                    return self._error(name, "L'enregistrement durable n'a pas pu être vérifié.")
+            except (sqlite3.Error, OSError, ValueError):
+                return self._error(name, "Je n'ai pas pu enregistrer cette information dans la mémoire persistante.")
             return AgentActionResult(
                 name=name,
                 success=True,
                 message="Information mémorisée localement.",
-                detail=f"memory_id={item.id}",
+                detail=json.dumps({
+                    "memory_id": item.id, "verified": True,
+                    "observed_state": {"memory_id": persisted.id, "persisted": True},
+                    "source": "sqlite_readback",
+                }, ensure_ascii=False),
             )
 
         if name == "recall_information":
             query = str(args.get("query", "")).strip()
             if not query:
                 return self._error(name, "La recherche mémoire est vide.")
-            items = LOCAL_MEMORY.search(query, limit=5)
+            try:
+                items = self.memory.search(query, limit=5)
+            except (sqlite3.Error, OSError, ValueError):
+                return self._error(name, "La mémoire persistante n'est pas disponible pour cette recherche.")
             if not items:
                 return AgentActionResult(
                     name=name,

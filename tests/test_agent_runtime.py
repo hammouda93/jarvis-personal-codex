@@ -2424,13 +2424,15 @@ class AgentRuntimeTests(unittest.TestCase):
                 {
                     "output": [
                         {
-                            "type": "message",
-                            "content": [
-                                {"type": "output_text", "text": "Compris."}
-                            ],
+                            "type": "function_call", "call_id": "store_vega",
+                            "name": "remember_information",
+                            "arguments": json.dumps({"content": "Mon projet s'appelle Vega One."}),
                         }
                     ]
-                }
+                },
+                {"output": [{"type": "message", "content": [
+                    {"type": "output_text", "text": "Compris."},
+                ]}]},
             ],
         )
 
