@@ -1,0 +1,48 @@
+.env
+.cache/
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+connectors.local.json
+
+# Local credentials (keep the documented template).
+.env.*
+!.env.example
+*.local.json
+credentials*.json
+secrets*.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Personal runtime data, browser profiles and diagnostic bundles.
+logs/
+*.log
+jarvis_diagnostics_*/
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*
+browser_profiles/
+browser-profile/
+User Data/
+playwright/.auth/
+*.har
+
+# Generated output and temporary artifacts.
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage*
+coverage.xml
+build/
+dist/
+*.egg-info/
+*.tmp
+*.bak
+*.zip
