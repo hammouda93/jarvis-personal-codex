@@ -236,6 +236,21 @@ class Settings:
         os.getenv("JARVIS_OPENAI_REASONING_EFFORT") or "low"
     ).strip()
     openai_web_search: bool = _bool("JARVIS_OPENAI_WEB_SEARCH", True)
+
+    # Provider-neutral read-only web research. This never opens a browser.
+    research_provider: str = (
+        os.getenv("JARVIS_RESEARCH_PROVIDER") or "auto"
+    ).strip().lower()
+    research_timeout_s: float = _float("JARVIS_RESEARCH_TIMEOUT_S", 12.0)
+    research_max_results: int = _int("JARVIS_RESEARCH_MAX_RESULTS", 6)
+    research_groq_model: str = (
+        os.getenv("JARVIS_RESEARCH_GROQ_MODEL") or "openai/gpt-oss-120b"
+    ).strip()
+    exa_api_key: str = (os.getenv("EXA_API_KEY") or "").strip()
+    exa_base_url: str = (
+        os.getenv("EXA_BASE_URL") or "https://api.exa.ai"
+    ).strip().rstrip("/")
+
     planner_provider: str = (
         os.getenv("JARVIS_PLANNER_PROVIDER") or "ollama"
     ).strip()
