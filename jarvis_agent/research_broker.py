@@ -452,7 +452,7 @@ class ResearchBroker:
     ) -> ResearchResult:
         started = time.perf_counter()
         text = str(query or "").strip()
-        if len(text) < 2:
+        if not text:
             return ResearchResult(
                 query=text,
                 success=False,
