@@ -156,6 +156,20 @@ class Settings:
     )
     semantic_missions_enabled: bool = _bool("JARVIS_SEMANTIC_MISSIONS_ENABLED", False)
     semantic_missions_dir: str = (os.getenv("JARVIS_SEMANTIC_MISSIONS_DIR") or "").strip()
+    recovery_guard_enabled: bool = (
+        False
+        if compatibility_baseline
+        else _bool("JARVIS_RECOVERY_GUARD_ENABLED", True)
+    )
+    recovery_max_tool_calls: int = _int(
+        "JARVIS_RECOVERY_MAX_TOOL_CALLS", 18
+    )
+    recovery_max_consecutive_failures: int = _int(
+        "JARVIS_RECOVERY_MAX_CONSECUTIVE_FAILURES", 4
+    )
+    recovery_max_same_tool_calls: int = _int(
+        "JARVIS_RECOVERY_MAX_SAME_TOOL_CALLS", 7
+    )
     model_telemetry_enabled: bool = _bool(
         "JARVIS_MODEL_TELEMETRY_ENABLED",
         False,

@@ -3177,6 +3177,17 @@ def build_agent_runtime(*, event_bus: MissionEventBus | None = None) -> AgentRun
     provider = settings.agent_provider.lower().strip()
 
     tools = NATIVE_TOOLS
+    recovery_tools = None
+    if settings.recovery_guard_enabled:
+        from .recovery_runtime import RecoveryToolRegistry
+
+        recovery_tools = RecoveryToolRegistry(
+            tools,
+            max_total_calls=settings.recovery_max_tool_calls,
+            max_consecutive_failures=settings.recovery_max_consecutive_failures,
+            max_same_tool_calls=settings.recovery_max_same_tool_calls,
+        )
+        tools = recovery_tools
     tracing_tools = None
     journal = None
     if event_bus is None and settings.runtime_observability_enabled:
@@ -3232,11 +3243,17 @@ def build_agent_runtime(*, event_bus: MissionEventBus | None = None) -> AgentRun
     if tracing_tools is not None:
         from .tracing_runtime import StructuredTracingRuntime
 
-        return StructuredTracingRuntime(
+        runtime = StructuredTracingRuntime(
             runtime,
             tracing_tools,
             journal=journal,
             configured_provider=provider,
             configured_model=str(getattr(runtime, "model", "") or ""),
         )
+
+    if recovery_tools is not None:
+        from .recovery_runtime import RecoveryGuardRuntime
+
+        runtime = RecoveryGuardRuntime(runtime, recovery_tools)
+
     return runtime
