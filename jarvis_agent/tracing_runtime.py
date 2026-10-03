@@ -30,7 +30,8 @@ def _verification_evidence(result: Any) -> dict[str, Any]:
             "value", "value_length", "after", "observed_state", "evidence",
             "proof", "visible_tabs", "window_closed_as_last_tab",
         ) if key in payload and payload[key] is not None
-        and (payload[key] or (type(payload[key]) in (int, float) and payload[key] == 0))
+        and (payload[key] or (type(payload[key]) in (int, float) and payload[key] == 0)
+             or (key in {"value", "after"} and isinstance(payload[key], str)))
     }
 
 

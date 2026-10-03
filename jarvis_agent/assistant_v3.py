@@ -244,6 +244,9 @@ class AssistantWorker(QObject):
         user_text: str,
         intent: ToolIntent,
     ) -> bool:
+        if settings.semantic_missions_enabled:
+            # The opt-in native mission path must not be bypassed by a shortcut.
+            return False
         if not self._is_simple_direct_action(user_text, intent):
             return False
 

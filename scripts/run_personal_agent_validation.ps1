@@ -1,4 +1,4 @@
-param([switch]$Targeted)
+param([switch]$Targeted, [switch]$Evolution)
 
 $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -22,6 +22,8 @@ $changes = @{
     JARVIS_STRUCTURED_TRACING_ENABLED = "0"
     JARVIS_RUNTIME_OBSERVABILITY_ENABLED = "0"
     JARVIS_KERNEL_SHADOW_ENABLED = "0"
+    JARVIS_SEMANTIC_MISSIONS_ENABLED = "0"
+    JARVIS_MEMORY_DB_PATH = (Join-Path $auditRoot "data\memory.sqlite3")
 }
 $originalValues = @{}
 foreach ($name in $changes.Keys) {
@@ -31,7 +33,9 @@ foreach ($name in $changes.Keys) {
 $validationExit = 1
 Push-Location -LiteralPath $projectRoot
 try {
-    $testArguments = if ($Targeted) {
+    $testArguments = if ($Evolution) {
+        "tests.test_memory tests.test_persistent_memory_runtime tests.test_semantic_missions tests.test_agent_runtime tests.test_assistant_v3 -v"
+    } elseif ($Targeted) {
         "tests.test_runtime_observability -v"
     } else {
         "discover -s tests -v"

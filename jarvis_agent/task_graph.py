@@ -45,7 +45,11 @@ class MissionTaskGraph:
         if node.task_id in node.dependencies:
             raise ValueError("task_cannot_depend_on_itself")
         self._nodes[node.task_id] = node
-        self._validate_acyclic()
+        try:
+            self._validate_acyclic()
+        except ValueError:
+            del self._nodes[node.task_id]
+            raise
 
     def get(self, task_id: str) -> TaskNode | None:
         return self._nodes.get(str(task_id))
@@ -55,6 +59,31 @@ class MissionTaskGraph:
             self._nodes.values(),
             key=lambda item: (item.priority, item.task_id),
         )
+
+    def as_dict(self) -> dict[str, Any]:
+        return {"mission_id": self.mission_id, "nodes": [
+            {
+                "task_id": node.task_id, "mission_id": node.mission_id,
+                "capability": node.capability, "agent_id": node.agent_id,
+                "dependencies": sorted(node.dependencies), "status": node.status.value,
+                "priority": node.priority, "payload": dict(node.payload),
+                "result": dict(node.result), "error": node.error,
+            } for node in self.nodes()
+        ]}
+
+    @classmethod
+    def from_dict(cls, raw: dict[str, Any]) -> "MissionTaskGraph":
+        graph = cls(str(raw["mission_id"]))
+        for item in raw.get("nodes", []):
+            graph.add(TaskNode(
+                task_id=str(item["task_id"]), mission_id=str(item["mission_id"]),
+                capability=str(item["capability"]), agent_id=str(item["agent_id"]),
+                dependencies=set(item.get("dependencies", [])),
+                status=TaskStatus(item.get("status", "pending")),
+                priority=int(item.get("priority", 100)), payload=dict(item.get("payload", {})),
+                result=dict(item.get("result", {})), error=str(item.get("error", "")),
+            ))
+        return graph
 
     def _validate_acyclic(self) -> None:
         visiting: set[str] = set()

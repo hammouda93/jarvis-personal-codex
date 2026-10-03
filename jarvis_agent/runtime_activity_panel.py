@@ -23,6 +23,10 @@ class RuntimeActivityPanel(QWidget):
         self.route = QLabel("Boucle agent observée ; actions directes hors de ce panneau")
         self.route.setTextFormat(Qt.PlainText)
         self.route.setWordWrap(True)
+        self.mission_summary = QLabel("Plan persistant — aucun plan observé")
+        self.mission_summary.setTextFormat(Qt.PlainText)
+        self.mission_summary.setWordWrap(True)
+        self._active_mission_id = None
         self.calls = QTreeWidget()
         self.calls.setColumnCount(3)
         self.calls.setHeaderLabels(["Outil", "Résultat / preuve", "Durée (ms)"])
@@ -35,10 +39,33 @@ class RuntimeActivityPanel(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.summary)
         layout.addWidget(self.route)
+        layout.addWidget(self.mission_summary)
         layout.addWidget(self.calls)
 
     @Slot(object)
     def on_event(self, event: BusEvent) -> None:
+        if isinstance(event, BusEvent) and event.kind == "mission.updated" and (
+            event.payload.get("source") == "semantic_mission"
+        ):
+            if event.payload.get("active") is False:
+                if self._active_mission_id == event.mission_id:
+                    self._active_mission_id = None
+                    self.mission_summary.setText("Plan persistant — aucun plan actif; sauvegarde conservée")
+                return
+            if event.payload.get("active") is not True:
+                return
+            self._active_mission_id = event.mission_id
+            counts = event.payload.get("step_counts", {})
+            completed = counts.get("completed", 0)
+            total = sum(value for value in counts.values() if isinstance(value, int))
+            status = event.payload.get("status", "?")
+            criteria = ("critères du plan satisfaits" if
+                event.payload.get("plan_verification") == "criteria_satisfied" else "critères en attente")
+            self.mission_summary.setText(
+                f"Plan {event.mission_id} · {completed}/{total} étapes · {status} · "
+                f"{criteria} · objectif global non évalué"
+            )
+            return
         if not isinstance(event, BusEvent) or not self.state.apply(event):
             return
         labels = {

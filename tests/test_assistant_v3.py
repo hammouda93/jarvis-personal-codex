@@ -1,10 +1,22 @@
 import unittest
+from dataclasses import replace
+from unittest.mock import patch
 
 from jarvis_agent.assistant_v3 import AssistantWorker
+from jarvis_agent.config import settings
 from jarvis_agent.tools import ToolIntent
 
 
 class AssistantV3FastPathTests(unittest.TestCase):
+    def test_semantic_missions_do_not_allow_voice_shortcut_to_bypass_native_path(self):
+        with patch("jarvis_agent.assistant_v3.settings", replace(settings, semantic_missions_enabled=True)), \
+                patch("jarvis_agent.assistant_v3.execute") as direct_execute:
+            handled = AssistantWorker._handle_simple_direct_action(
+                None, "Ouvre Chrome.", ToolIntent("app.open", {"app": "chrome"}),
+            )
+        self.assertFalse(handled)
+        direct_execute.assert_not_called()
+
     def test_simple_youtube_open_uses_direct_path(self):
         self.assertTrue(
             AssistantWorker._is_simple_direct_action(

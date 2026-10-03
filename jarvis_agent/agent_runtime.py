@@ -235,6 +235,8 @@ class AgentTurnResult:
     actions: tuple[AgentActionResult, ...] = ()
     end_session: bool = False
     should_exit: bool = False
+    mission_id: str | None = None
+    plan_verification: str = ""
 
 
 class AgentRuntime(Protocol):
@@ -1072,6 +1074,9 @@ class OllamaToolAgent:
         memory_repair_attempted = False
 
         for round_index in range(1, settings.agent_max_tool_rounds + 1):
+            self._messages[0]["content"] = _effective_system_instructions() + str(
+                getattr(self.tools, "runtime_instructions", "") or ""
+            )
             if phase:
                 phase("thinking")
             if log:
@@ -1473,6 +1478,7 @@ class OpenAIResponsesAgent:
             payload: dict[str, Any] = {
                 "model": self.model,
                 "instructions": _SYSTEM_INSTRUCTIONS
+                + str(getattr(self.tools, "runtime_instructions", "") or "")
                 + ("\n" + memory_message if memory_message else ""),
                 "input": next_input,
                 "tools": self._tool_definitions(),
@@ -1893,6 +1899,9 @@ class GroqResponsesAgent:
             ]
         if ms_football_only:
             allowed = set(msf_tool_names or ())
+            if settings.semantic_missions_enabled:
+                from .semantic_mission_runtime import MISSION_CONTROL_TOOLS
+                allowed.update(MISSION_CONTROL_TOOLS)
             allowed.update(
                 {
                     "reset_conversation_context",
@@ -2332,6 +2341,9 @@ class GroqResponsesAgent:
         memory_repair_attempted = False
 
         for round_index in range(1, settings.agent_max_tool_rounds + 1):
+            self._messages[0]["content"] = _effective_system_instructions() + str(
+                getattr(self.tools, "runtime_instructions", "") or ""
+            )
             if phase:
                 phase("thinking")
             if log:
@@ -3152,6 +3164,20 @@ def build_agent_runtime(*, event_bus: MissionEventBus | None = None) -> AgentRun
     journal = None
     if event_bus is None and settings.runtime_observability_enabled:
         event_bus = MissionEventBus()
+    mission_session = None
+    if settings.semantic_missions_enabled:
+        import os
+        from pathlib import Path
+        from .mission_semantics import SemanticMissionSession
+        from .semantic_mission_runtime import SemanticMissionTools
+
+        root = settings.semantic_missions_dir or str(
+            Path(os.getenv("LOCALAPPDATA") or Path.home()) / "JarvisPersonal" / "semantic_missions"
+        )
+        mission_session = SemanticMissionSession(
+            base_dir=root, owner_user_id=settings.kernel_shadow_user_id, event_bus=event_bus,
+        )
+        tools = SemanticMissionTools(tools, mission_session)
     if settings.structured_tracing_enabled:
         from .event_journal import StructuredEventJournal
 
@@ -3163,7 +3189,7 @@ def build_agent_runtime(*, event_bus: MissionEventBus | None = None) -> AgentRun
         from .tracing_runtime import TracingToolRegistry
 
         tracing_tools = TracingToolRegistry(
-            NATIVE_TOOLS,
+            tools,
             journal=journal,
             event_bus=event_bus,
         )
@@ -3181,6 +3207,10 @@ def build_agent_runtime(*, event_bus: MissionEventBus | None = None) -> AgentRun
         raise AgentRuntimeUnavailable(
             f"Agent provider non pris en charge: {settings.agent_provider}"
         )
+
+    if mission_session is not None:
+        from .semantic_mission_runtime import SemanticMissionRuntime
+        runtime = SemanticMissionRuntime(runtime, mission_session)
 
     if tracing_tools is not None:
         from .tracing_runtime import StructuredTracingRuntime

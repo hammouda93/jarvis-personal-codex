@@ -118,7 +118,7 @@
     },
     {
       "path": "jarvis_agent/agent_runtime.py",
-      "lines": 3058,
+      "lines": 3225,
       "classes": [
         "AgentTurnResult",
         "AgentRuntime",
@@ -140,6 +140,8 @@
         "_looks_like_pseudo_tool_syntax",
         "_looks_like_unnecessary_followup",
         "_is_explicit_memory_write_request",
+        "_memory_write_missing",
+        "_persistent_memory_message",
         "_looks_like_clear_operational_feedback",
         "_action_detail_dict",
         "_actions_have_verified_proof",
@@ -163,7 +165,9 @@
         ".connectors",
         ".event_bus",
         ".event_journal",
+        ".mission_semantics",
         ".native_tools",
+        ".semantic_mission_runtime",
         ".tools",
         ".tracing_runtime",
         "__future__",
@@ -171,6 +175,8 @@
         "difflib",
         "json",
         "openai",
+        "os",
+        "pathlib",
         "re",
         "socket",
         "time",
@@ -251,7 +257,7 @@
     },
     {
       "path": "jarvis_agent/assistant_v3.py",
-      "lines": 553,
+      "lines": 556,
       "classes": [
         "AssistantWorker"
       ],
@@ -393,7 +399,7 @@
     },
     {
       "path": "jarvis_agent/config.py",
-      "lines": 297,
+      "lines": 299,
       "classes": [
         "Settings"
       ],
@@ -679,7 +685,7 @@
     },
     {
       "path": "jarvis_agent/kernel_contracts.py",
-      "lines": 250,
+      "lines": 251,
       "classes": [
         "MissionStatus",
         "EventKind",
@@ -943,22 +949,27 @@
     },
     {
       "path": "jarvis_agent/memory.py",
-      "lines": 135,
+      "lines": 173,
       "classes": [
         "MemoryItem",
         "LocalMemory"
       ],
       "functions": [
-        "_default_db_path"
+        "_default_db_path",
+        "_fold",
+        "search_terms"
       ],
       "imports": [
         "__future__",
+        "contextlib",
         "dataclasses",
         "datetime",
         "os",
         "pathlib",
         "re",
-        "sqlite3"
+        "sqlite3",
+        "typing",
+        "unicodedata"
       ]
     },
     {
@@ -985,7 +996,7 @@
     },
     {
       "path": "jarvis_agent/mission_context_store.py",
-      "lines": 212,
+      "lines": 228,
       "classes": [
         "MissionContextStore"
       ],
@@ -995,6 +1006,7 @@
       "imports": [
         ".kernel_contracts",
         "__future__",
+        "contextlib",
         "json",
         "os",
         "pathlib",
@@ -1040,6 +1052,32 @@
         "threading",
         "time",
         "typing"
+      ]
+    },
+    {
+      "path": "jarvis_agent/mission_semantics.py",
+      "lines": 353,
+      "classes": [
+        "SemanticMissionSession"
+      ],
+      "functions": [
+        "_identifier",
+        "_bounded_json"
+      ],
+      "imports": [
+        ".event_bus",
+        ".kernel_contracts",
+        ".mission_context_store",
+        ".task_graph",
+        ".task_graph_store",
+        ".tracing_runtime",
+        "__future__",
+        "json",
+        "pathlib",
+        "re",
+        "time",
+        "typing",
+        "uuid"
       ]
     },
     {
@@ -1116,7 +1154,7 @@
     },
     {
       "path": "jarvis_agent/native_tools.py",
-      "lines": 1254,
+      "lines": 1269,
       "classes": [
         "AgentActionResult",
         "NativeToolRegistry"
@@ -1135,6 +1173,7 @@
         "json",
         "os",
         "pathlib",
+        "sqlite3",
         "typing"
       ]
     },
@@ -1265,7 +1304,7 @@
     },
     {
       "path": "jarvis_agent/regression_registry.py",
-      "lines": 219,
+      "lines": 229,
       "classes": [
         "RegressionSpec",
         "RegressionRegistry"
@@ -1354,7 +1393,7 @@
     },
     {
       "path": "jarvis_agent/runtime_activity_panel.py",
-      "lines": 70,
+      "lines": 97,
       "classes": [
         "RuntimeActivityPanel"
       ],
@@ -1446,6 +1485,27 @@
         "os",
         "typing",
         "win32cred"
+      ]
+    },
+    {
+      "path": "jarvis_agent/semantic_mission_runtime.py",
+      "lines": 206,
+      "classes": [
+        "SemanticMissionTools",
+        "SemanticMissionRuntime"
+      ],
+      "functions": [
+        "_definition",
+        "_definitions"
+      ],
+      "imports": [
+        ".mission_semantics",
+        ".native_tools",
+        "__future__",
+        "copy",
+        "dataclasses",
+        "json",
+        "re"
       ]
     },
     {
@@ -1561,7 +1621,7 @@
     },
     {
       "path": "jarvis_agent/task_graph.py",
-      "lines": 166,
+      "lines": 195,
       "classes": [
         "TaskStatus",
         "TaskNode",
@@ -1577,7 +1637,7 @@
     },
     {
       "path": "jarvis_agent/task_graph_store.py",
-      "lines": 131,
+      "lines": 104,
       "classes": [
         "TaskGraphStore"
       ],
@@ -1587,12 +1647,14 @@
       "imports": [
         ".task_graph",
         "__future__",
+        "contextlib",
         "json",
         "os",
         "pathlib",
         "sqlite3",
         "threading",
-        "time"
+        "time",
+        "typing"
       ]
     },
     {
@@ -1659,7 +1721,7 @@
     },
     {
       "path": "jarvis_agent/tracing_runtime.py",
-      "lines": 217,
+      "lines": 218,
       "classes": [
         "TracingToolRegistry",
         "StructuredTracingRuntime"
@@ -1831,7 +1893,7 @@
     "test_agent_knowledge.py": 9,
     "test_agent_runtime.py": 60,
     "test_architecture_extensions.py": 17,
-    "test_assistant_v3.py": 6,
+    "test_assistant_v3.py": 7,
     "test_brain.py": 13,
     "test_capabilities.py": 5,
     "test_connectors.py": 4,
@@ -1841,15 +1903,17 @@
     "test_memory.py": 4,
     "test_mission.py": 3,
     "test_native_tools.py": 19,
+    "test_persistent_memory_runtime.py": 17,
     "test_recognition_retry.py": 1,
     "test_registry.py": 4,
     "test_runtime_observability.py": 24,
     "test_screen_vision.py": 7,
+    "test_semantic_missions.py": 32,
     "test_stt.py": 2,
     "test_stt_filters.py": 2,
     "test_tools.py": 26,
     "test_ui_logging.py": 1,
     "test_windows_perception.py": 23
   },
-  "total_test_methods": 292
+  "total_test_methods": 342
 }

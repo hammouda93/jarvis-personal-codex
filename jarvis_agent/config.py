@@ -154,6 +154,8 @@ class Settings:
     runtime_observability_enabled: bool = _bool(
         "JARVIS_RUNTIME_OBSERVABILITY_ENABLED", False,
     )
+    semantic_missions_enabled: bool = _bool("JARVIS_SEMANTIC_MISSIONS_ENABLED", False)
+    semantic_missions_dir: str = (os.getenv("JARVIS_SEMANTIC_MISSIONS_DIR") or "").strip()
     model_telemetry_enabled: bool = _bool(
         "JARVIS_MODEL_TELEMETRY_ENABLED",
         False,

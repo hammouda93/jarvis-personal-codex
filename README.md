@@ -5,6 +5,11 @@ clap launcher. The current desktop entry point is `run_jarvis.py` (Assistant V3)
 See the [architecture audit](docs/PERSONAL_AI_AGENT_AUDIT_2026-10-03.md)
 for live, passive, legacy and unverified components.
 
+The current memory and optional mission-plan milestone is described in the
+[implementation decision](docs/DECISION_PERSISTENT_MEMORY_AND_MISSIONS.md).
+Use the [human validation guide](docs/PERSONAL_AI_AGENT_MANUAL_VALIDATION.md)
+to test persistence across restarts and the experimental mission tools.
+
 Python script that listens to your default microphone and runs a **double-clap** welcome flow (Spotify, Chrome windows, ElevenLabs voice, Cursor). See constants at the top of `jarvis.py` for behavior and tuning.
 
 ## Setup

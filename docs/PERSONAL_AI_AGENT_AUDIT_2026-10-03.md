@@ -184,3 +184,48 @@ Prochain critère avant extension d'autorité : valider le flux sur un tour voca
 réel, couvrir les actions directes et les appels provider-side, puis concevoir
 le contrat sémantique shadow. Le Research Broker et la découverte AUMID restent
 des travaux ultérieurs, et non des fonctionnalités annoncées comme présentes.
+
+## Deuxième évolution : mémoire durable et plans proposés
+
+Le mot « retiens » autorise l'enregistrement explicite. La confirmation exige
+maintenant un appel natif réussi et une relecture SQLite après commit. Une
+question naturelle pertinente peut charger des souvenirs dans un nouveau
+runtime, indépendamment de l'historique de conversation. La recherche Unicode
+filtre les mots interrogatifs tout en conservant la conjonction des termes
+significatifs. Elle reste lexicale, sans promesse de compréhension de toutes
+les paraphrases. Le chemin personnel existant est conservé ; un chemin explicite
+stable est configurable par `JARVIS_MEMORY_DB_PATH`.
+
+`mission_semantics.py` et `semantic_mission_runtime.py` intègrent les contrats
+de contexte, DAG et bus existants à la boucle model-native, sous l'option
+`JARVIS_SEMANTIC_MISSIONS_ENABLED=1`, désactivée par défaut. Le modèle peut
+proposer un plan, consulter son état, corriger des entités, le mettre en attente
+et le restaurer après redémarrage. Les mutations d'un plan actif sont rattachées
+à une étape prête. L'intention est persistée avant exécution, les dépendances
+sont contrôlées et les preuves correspondent à l'outil et aux valeurs attendues.
+Une correction n'effectue aucune saisie Windows ; une reprise n'exécute rien
+automatiquement. Le routage vocal ordinaire rejoint cette boucle lorsque
+l'option est active.
+
+Le graphe complet est canonique dans la transaction du contexte versionné ;
+`TaskGraphStore` reste une projection récupérable. Les opérations de version
+sont atomiques, les connexions se ferment explicitement et `mark_status`
+conserve le statut dans le JSON chargé. La sérialisation du DAG conserve la
+priorité zéro et un ajout cyclique est annulé.
+
+Les événements `mission.updated` affichent les étapes et les critères dans le
+panneau Qt. **Critères du plan satisfaits ne signifie pas objectif global
+vérifié.** La couverture sémantique reste `not_evaluated`, les contraintes
+textuelles ne constituent pas encore une politique générale et la récupération
+automatique d'une mutation incertaine reste à développer. Kernel/Supervisor,
+équipe d'agents, Research Broker et découverte AUMID restent à intégrer.
+
+Validation finale de cette évolution : **342 tests OK, 353,448 s** ; 87 modules
+et 342 méthodes dans l'inventaire AST. Les 50 nouveaux tests couvrent mémoire,
+plans et routage vocal. La mémoire a été relue dans un second processus Python ;
+les boucles des modèles et les actions Windows sont simulées. Le panneau réel
+a été inspecté par rendu Qt hors écran. Aucun essai vocal/API/Windows réel
+n'est déclaré réussi.
+
+Voir la [décision et les limites](DECISION_PERSISTENT_MEMORY_AND_MISSIONS.md)
+et les [tests humains à effectuer](PERSONAL_AI_AGENT_MANUAL_VALIDATION.md).

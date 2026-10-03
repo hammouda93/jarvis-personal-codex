@@ -198,12 +198,14 @@ def build_default_regression_registry() -> RegressionRegistry:
         RegressionSpec(
             test_id="TEST-MEMORY-KNOWLEDGE",
             command=(
-                "python -m unittest tests.test_agent_knowledge "
+                "python -m unittest tests.test_memory tests.test_persistent_memory_runtime tests.test_agent_knowledge "
                 "tests.test_agent_runtime -v"
             ),
             tags=("memory", "knowledge", "learning", "runtime"),
             watched_paths=(
                 "jarvis_agent/agent_knowledge.py",
+                "jarvis_agent/memory.py",
+                "jarvis_agent/native_tools.py",
                 "jarvis_agent/agent_runtime.py",
             ),
             level="suite",
@@ -213,6 +215,14 @@ def build_default_regression_registry() -> RegressionRegistry:
         )
     )
 
+    registry.register(RegressionSpec(
+        test_id="TEST-SEMANTIC-MISSIONS",
+        command="powershell -ExecutionPolicy Bypass -File .\\scripts\\run_personal_agent_validation.ps1 -Evolution",
+        tags=("missions", "memory", "persistence", "runtime", "verification"),
+        watched_paths=("jarvis_agent/mission_semantics.py", "jarvis_agent/semantic_mission_runtime.py",
+            "jarvis_agent/mission_context_store.py", "jarvis_agent/task_graph.py", "jarvis_agent/task_graph_store.py"),
+        level="suite", description="Persistent personal memory and proposed plans, bound entities and evidence gates.",
+    ))
     return registry
 
 
