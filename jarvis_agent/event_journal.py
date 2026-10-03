@@ -20,6 +20,19 @@ _EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I)
 _HOME_RE = re.compile(
     r"(?i)(?:[A-Z]:\\Users\\[^\\\s]+|/home/[^/\s]+|/Users/[^/\s]+)"
 )
+_SECRET_TEXT_RE = re.compile(
+    r"(?i)\b(?:api[_ -]?key|password|token|secret|authorization)[\"']?"
+    r"\s*[:=]\s*(?:bearer\s+)?[\"']?[^\s\"',;}\]]+"
+)
+_BEARER_RE = re.compile(r"(?i)\bbearer\s+[A-Za-z0-9._~+/=-]+")
+_PROVIDER_KEY_RE = re.compile(
+    r"\b(?:gsk_[A-Za-z0-9]{20,}|csk[-_][A-Za-z0-9]{20,}|"
+    r"sk-(?:proj-)?[A-Za-z0-9_-]{24,}|gh[pousr]_[A-Za-z0-9]{30,})\b"
+)
+_PRIVATE_KEY_RE = re.compile(
+    r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----.*?"
+    r"(?:-----END (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|$)", re.S,
+)
 
 
 def _default_path() -> Path:
@@ -42,7 +55,11 @@ def _safe_value(value: Any, *, depth: int = 0) -> Any:
     if value is None or isinstance(value, (bool, int, float)):
         return value
     if isinstance(value, str):
-        text = value
+        text = value[:10000]
+        text = _PRIVATE_KEY_RE.sub("<redacted>", text)
+        text = _SECRET_TEXT_RE.sub("<redacted>", text)
+        text = _BEARER_RE.sub("Bearer <redacted>", text)
+        text = _PROVIDER_KEY_RE.sub("<redacted>", text)
         text = _EMAIL_RE.sub("<email>", text)
         text = _HOME_RE.sub("<user-home>", text)
         if len(text) > 2400:

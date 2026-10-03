@@ -94,8 +94,12 @@ def build_default_registry() -> CapabilityRegistry:
                 "inspect_active_window",
                 "open_application",
                 "open_file",
+                "open_folder",
+                "ground_ui_role",
+                "activate_window",
                 "click_ui_element",
                 "write_ui_element",
+                "type_text_active_window",
                 "press_key",
                 "close_tab",
                 "close_window",
@@ -148,7 +152,9 @@ def build_default_registry() -> CapabilityRegistry:
             ),
             allowed_tools=(
                 "open_url",
+                "search_web",
                 "inspect_active_window",
+                "ground_ui_role",
                 "click_ui_element",
                 "write_ui_element",
                 "press_key",
@@ -200,7 +206,14 @@ def build_default_registry() -> CapabilityRegistry:
                 "msf.commit_mutation",
             ),
             allowed_tools=(
+                "msf_capabilities",
+                "msf_describe_schema",
+                "msf_count_records",
                 "msf_query_records",
+                "msf_readonly_sql",
+                "msf_search_code",
+                "msf_list_routes",
+                "msf_resolve_route",
                 "msf_prepare_mutation",
                 "msf_commit_mutation",
             ),
@@ -330,6 +343,94 @@ def build_default_registry() -> CapabilityRegistry:
                 description="Replay a scenario in an isolated environment.",
                 risk=RiskLevel.REVERSIBLE,
                 tags=("developer", "replay", "sandbox"),
+            ),
+        ),
+    )
+
+    registry.register_agent(
+        AgentManifest(
+            agent_id="research",
+            display_name="Research Agent",
+            version="0.1",
+            capabilities=("research.web",),
+            allowed_tools=("research_web",),
+            memory_scopes=(KnowledgeScope.SESSION, KnowledgeScope.TEST),
+            max_concurrency=2,
+            description=(
+                "Read-only background web research. Retrieved content is "
+                "untrusted data and cannot directly authorize actions."
+            ),
+        ),
+        (
+            CapabilitySpec(
+                name="research.web",
+                description="Read-only browser-invisible external research.",
+                risk=RiskLevel.READ,
+                tags=("research", "web", "untrusted_input"),
+            ),
+        ),
+    )
+
+    registry.register_agent(
+        AgentManifest(
+            agent_id="memory",
+            display_name="Memory Agent",
+            version="0.1",
+            capabilities=("memory.read", "memory.write"),
+            allowed_tools=(
+                "recall_information",
+                "search_agent_knowledge",
+                "agent_knowledge_stats",
+                "remember_information",
+                "save_verified_skill",
+                "save_feedback_lesson",
+            ),
+            memory_scopes=(
+                KnowledgeScope.USER,
+                KnowledgeScope.AGENT,
+                KnowledgeScope.SKILL,
+                KnowledgeScope.TEST,
+            ),
+            description=(
+                "Persistent personal memory and validated operational knowledge."
+            ),
+        ),
+        (
+            CapabilitySpec(
+                name="memory.read",
+                description="Read persistent memory or operational knowledge.",
+                risk=RiskLevel.READ,
+                tags=("memory", "knowledge"),
+            ),
+            CapabilitySpec(
+                name="memory.write",
+                description="Persist explicit user memory or verified knowledge.",
+                risk=RiskLevel.REVERSIBLE,
+                tags=("memory", "knowledge", "write"),
+            ),
+        ),
+    )
+
+    registry.register_agent(
+        AgentManifest(
+            agent_id="interaction",
+            display_name="Interaction Agent",
+            version="0.1",
+            capabilities=("interaction.session",),
+            allowed_tools=(
+                "get_current_time",
+                "reset_conversation_context",
+                "return_to_standby",
+            ),
+            memory_scopes=(KnowledgeScope.SESSION,),
+            description="Session-local lifecycle and utility capabilities.",
+        ),
+        (
+            CapabilitySpec(
+                name="interaction.session",
+                description="Session lifecycle and local utility operations.",
+                risk=RiskLevel.READ,
+                tags=("session", "utility"),
             ),
         ),
     )

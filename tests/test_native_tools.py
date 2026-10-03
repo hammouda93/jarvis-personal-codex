@@ -8,11 +8,49 @@ from unittest.mock import patch
 
 from jarvis_agent.agent_knowledge import AgentKnowledgeStore
 from jarvis_agent.config import settings as real_settings
-from jarvis_agent.native_tools import NativeToolRegistry
+from jarvis_agent.native_tools import (
+    NativeToolRegistry,
+    _window_items_from_result,
+    _window_title_matches_application,
+)
 from jarvis_agent.tools import ToolResult
 
 
 class NativeToolRegistryTests(unittest.TestCase):
+    def test_window_title_match_is_generic_and_not_substring_only(self):
+        self.assertTrue(
+            _window_title_matches_application("WhatsApp", "WhatsApp")
+        )
+        self.assertTrue(
+            _window_title_matches_application(
+                "Cursor — project.py",
+                "Cursor",
+            )
+        )
+        self.assertFalse(
+            _window_title_matches_application(
+                "Photo Studio Beta",
+                "WhatsApp",
+            )
+        )
+
+    def test_window_list_result_parser_accepts_list_and_fallback_object(self):
+        result = SimpleNamespace(
+            success=True,
+            detail='[{"title":"One"}]',
+        )
+        self.assertEqual(
+            _window_items_from_result(result)[0]["title"],
+            "One",
+        )
+        result.detail = (
+            '{"windows":[{"title":"Two"}],"fallback":"win32"}'
+        )
+        self.assertEqual(
+            _window_items_from_result(result)[0]["title"],
+            "Two",
+        )
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.knowledge = AgentKnowledgeStore(
@@ -40,7 +78,7 @@ class NativeToolRegistryTests(unittest.TestCase):
         "jarvis_agent.native_tools.settings",
         replace(real_settings, operational_learning_enabled=True),
     )
-    @patch("jarvis_agent.native_tools.os.startfile")
+    @patch("jarvis_agent.native_tools.os.startfile", create=True)
     @patch("jarvis_agent.native_tools.execute")
     def test_learned_app_profile_is_reused_before_rescanning_windows(
         self,
@@ -63,17 +101,19 @@ class NativeToolRegistryTests(unittest.TestCase):
             )
 
         self.assertTrue(result.success)
-        startfile_mock.assert_called_once_with(str(shortcut))
+        startfile_mock.assert_called_once()
+        launched = Path(startfile_mock.call_args.args[0])
+        self.assertEqual(launched.name, shortcut.name)
         execute_mock.assert_not_called()
 
     @patch("jarvis_agent.native_tools.execute")
-    def test_known_app_failure_falls_back_to_generic_discovery(
+    def test_generic_discovery_precedes_legacy_known_app_fallback(
         self,
         execute_mock,
     ):
         execute_mock.side_effect = [
-            ToolResult(False, "missing", "cursor missing"),
-            ToolResult(True, "ok", "Cursor.lnk"),
+            ToolResult(False, "missing", "generic missing"),
+            ToolResult(True, "ok", "legacy cursor"),
         ]
 
         result = self.registry.execute(
@@ -85,13 +125,13 @@ class NativeToolRegistryTests(unittest.TestCase):
         self.assertEqual(execute_mock.call_count, 2)
         first = execute_mock.call_args_list[0].args[0]
         second = execute_mock.call_args_list[1].args[0]
-        self.assertEqual(first.name, "app.open")
-        self.assertEqual(first.args["app"], "cursor")
-        self.assertEqual(second.name, "app.open_named")
-        self.assertEqual(second.args["query"], "Cursor")
+        self.assertEqual(first.name, "app.open_named")
+        self.assertEqual(first.args["query"], "Cursor")
+        self.assertEqual(second.name, "app.open")
+        self.assertEqual(second.args["app"], "cursor")
 
     @patch("jarvis_agent.native_tools.execute")
-    def test_notepad_alias_uses_known_app_path(self, execute_mock):
+    def test_notepad_alias_uses_generic_discovery_first(self, execute_mock):
         execute_mock.return_value = ToolResult(True, "ok", "notepad")
 
         result = self.registry.execute(
@@ -101,8 +141,8 @@ class NativeToolRegistryTests(unittest.TestCase):
 
         self.assertTrue(result.success)
         intent = execute_mock.call_args.args[0]
-        self.assertEqual(intent.name, "app.open")
-        self.assertEqual(intent.args["app"], "notepad")
+        self.assertEqual(intent.name, "app.open_named")
+        self.assertEqual(intent.args["query"], "Bloc-notes")
 
     @patch("jarvis_agent.native_tools.execute")
     def test_open_file_uses_generic_file_discovery(self, execute_mock):

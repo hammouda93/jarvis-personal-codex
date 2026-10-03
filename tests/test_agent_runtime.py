@@ -1,4 +1,5 @@
 import copy
+import json
 import unittest
 from dataclasses import replace
 from types import SimpleNamespace
@@ -22,6 +23,7 @@ from jarvis_agent.agent_runtime import (
     _visible_text,
     _actions_have_verified_proof,
     _looks_like_clear_operational_feedback,
+    _requested_action_capabilities,
 )
 from jarvis_agent.native_tools import AgentActionResult
 
@@ -444,6 +446,25 @@ class FakeGroqAgent(GroqResponsesAgent):
 
 
 class AgentRuntimeTests(unittest.TestCase):
+
+    def test_ambiguous_edit_verbs_require_a_ui_destination(self):
+        for text in (
+            "Et je veux aussi ajouter des paiements.",
+            "Je veux remplacer notre fournisseur.",
+            "We could append another payment provider.",
+        ):
+            with self.subTest(text=text):
+                self.assertNotIn("write_ui", _requested_action_capabilities(text))
+
+    def test_explicit_ui_edit_destinations_keep_completion_guard(self):
+        for text in (
+            "Ajoute Bonjour dans le champ message.",
+            "Remplace le texte du document par Bonjour.",
+            "Append Hello to the input field.",
+            "Écris Bonjour.",
+        ):
+            with self.subTest(text=text):
+                self.assertIn("write_ui", _requested_action_capabilities(text))
 
     def test_pseudo_tool_syntax_is_detected(self):
         self.assertTrue(
@@ -2403,13 +2424,15 @@ class AgentRuntimeTests(unittest.TestCase):
                 {
                     "output": [
                         {
-                            "type": "message",
-                            "content": [
-                                {"type": "output_text", "text": "Compris."}
-                            ],
+                            "type": "function_call", "call_id": "store_vega",
+                            "name": "remember_information",
+                            "arguments": json.dumps({"content": "Mon projet s'appelle Vega One."}),
                         }
                     ]
-                }
+                },
+                {"output": [{"type": "message", "content": [
+                    {"type": "output_text", "text": "Compris."},
+                ]}]},
             ],
         )
 

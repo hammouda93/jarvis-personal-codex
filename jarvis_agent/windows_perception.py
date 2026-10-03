@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from .tools import normalize
+from .ui_grounding import ground_role
 
 
 def _desktop():
@@ -1147,6 +1148,57 @@ def inspect_active_window(
         _json(payload),
     )
 
+
+
+def ground_ui_role(
+    role: str,
+    *,
+    title: str | None = None,
+    hint: str = "",
+) -> UIActionResult:
+    """Resolve a semantic UI role against a fresh accessibility snapshot.
+
+    This is perception only. It never clicks or writes. The returned ref is
+    valid only until the next UI inspection, exactly like ordinary snapshot refs.
+    """
+    inspection = inspect_active_window(title=title)
+    if not inspection.success:
+        return inspection
+    try:
+        snapshot = json.loads(inspection.detail or "{}")
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return UIActionResult(
+            False,
+            "L'inspection UI n'a pas produit un snapshot exploitable.",
+            "invalid_inspection_payload",
+        )
+
+    grounded = ground_role(
+        snapshot,
+        role,
+        mission_hint=str(hint or "").strip(),
+    )
+    payload = grounded.as_dict()
+    if grounded.status == "resolved" and grounded.selected is not None:
+        return UIActionResult(
+            True,
+            (
+                f"Rôle UI {role} identifié: "
+                f"{grounded.selected.ref}."
+            ),
+            _json(payload),
+        )
+    if grounded.status == "ambiguous":
+        return UIActionResult(
+            True,
+            f"Le rôle UI {role} reste ambigu après inspection.",
+            _json(payload),
+        )
+    return UIActionResult(
+        True,
+        f"Aucun contrôle suffisamment fiable pour le rôle UI {role}.",
+        _json(payload),
+    )
 
 def _score_name(query: str, candidate: str) -> float:
     wanted = normalize(query)

@@ -1,0 +1,82 @@
+name: Personal AI Agent CI
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  architecture-contracts:
+    name: Architecture contracts (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.9"]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install lightweight test dependencies
+        run: python -m pip install --upgrade pip python-dotenv
+      - name: Compile changed architecture modules
+        run: >-
+          python -m py_compile
+          jarvis_agent/windows_app_discovery.py
+          jarvis_agent/ui_grounding.py
+          jarvis_agent/research_broker.py
+          jarvis_agent/recovery_runtime.py
+          jarvis_agent/live_kernel_gateway.py
+          jarvis_agent/capability_registry.py
+          jarvis_agent/kernel_policy.py
+          jarvis_agent/tools.py
+          jarvis_agent/native_tools.py
+          jarvis_agent/windows_perception.py
+          jarvis_agent/agent_runtime.py
+          jarvis_agent/states.py
+          jarvis_agent/assistant_v3.py
+      - name: Run new architecture tests
+        run: >-
+          python -m unittest
+          tests.test_windows_app_discovery
+          tests.test_ui_grounding
+          tests.test_research_broker
+          tests.test_recovery_runtime
+          tests.test_runtime_phases
+          tests.test_live_kernel_governance
+          -v
+      - name: Run launch compatibility regressions
+        run: python -m unittest tests.test_native_tools -v
+
+
+  full-regression:
+    name: Full historical regression (Windows)
+    needs: architecture-contracts
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.9"
+          cache: pip
+      - name: Create project virtual environment
+        shell: pwsh
+        run: python -m venv .venv
+      - name: Install project dependencies
+        shell: pwsh
+        run: |
+          .\.venv\Scripts\python.exe -m pip install --upgrade pip
+          .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+      - name: Run complete isolated unittest regression
+        shell: pwsh
+        run: >-
+          powershell -NoProfile -ExecutionPolicy Bypass
+          -File .\scripts\run_personal_agent_validation.ps1

@@ -32,6 +32,7 @@ class AssistantWorker(QObject):
     detail_changed = Signal(str)
     audio_level_changed = Signal(float)
     log_line = Signal(str)
+    runtime_event = Signal(object)
     finished = Signal()
 
     def __init__(self) -> None:
@@ -40,8 +41,12 @@ class AssistantWorker(QObject):
         self._stt = build_stt()
         self._tts = ElevenLabsTTS()
         self._agent = build_agent_runtime()
+        self._runtime_bus = getattr(self._agent, "event_bus", None)
+        if self._runtime_bus is not None and settings.runtime_observability_enabled:
+            self._runtime_bus.subscribe(None, self._forward_runtime_event)
         self._conversation_language = "fr"
         self._pending_direct_follow_up = ""
+        self._autonomous_research_announced = False
         self._kernel_shadow = None
         self._kernel_shadow_boot_error = ""
         if settings.kernel_shadow_enabled:
@@ -64,6 +69,9 @@ class AssistantWorker(QObject):
         self.status_changed.emit(status or STATE_LABELS[state])
         self.log_line.emit(f"[STATE] {state.value}")
 
+    def _forward_runtime_event(self, event) -> None:
+        self.runtime_event.emit(event)
+
     def _level(self, value: float) -> None:
         self.audio_level_changed.emit(max(0.0, min(1.0, float(value))))
 
@@ -81,8 +89,52 @@ class AssistantWorker(QObject):
     def _agent_phase(self, phase: str) -> None:
         if phase == "thinking":
             self._state(AssistantState.THINKING, "Jarvis réfléchit…")
+        elif phase == "planning":
+            self._state(AssistantState.PLANNING, "Planification de la mission…")
+        elif phase == "routing":
+            self._state(AssistantState.ROUTING, "Sélection de la capacité…")
         elif phase == "acting":
             self._state(AssistantState.ACTING, "Jarvis agit…")
+        elif phase == "observing":
+            self._state(AssistantState.OBSERVING, "Observation de l'état réel…")
+        elif phase == "verifying":
+            self._state(AssistantState.VERIFYING, "Vérification de la preuve…")
+        elif phase.startswith("researching_"):
+            autonomous = phase != "researching_explicit"
+            if autonomous and not self._autonomous_research_announced:
+                if phase == "researching_autonomous_after_failure":
+                    notice = (
+                        "Je n'ai pas pu résoudre ce point avec les méthodes "
+                        "locales disponibles. Je vais vérifier la solution "
+                        "en arrière-plan."
+                    )
+                else:
+                    notice = (
+                        "J'ai besoin de vérifier une information externe. "
+                        "Je lance une recherche en arrière-plan."
+                    )
+                self.log_line.emit(f"[RESEARCH] autonomous=1 reason={phase}")
+                self._speak(notice)
+                self._autonomous_research_announced = True
+            self._state(
+                AssistantState.RESEARCHING,
+                "Recherche en arrière-plan…",
+            )
+        elif phase == "recovering":
+            self._state(
+                AssistantState.RECOVERING,
+                "Diagnostic et récupération…",
+            )
+        elif phase == "waiting_approval":
+            self._state(
+                AssistantState.WAITING_APPROVAL,
+                "Validation utilisateur requise…",
+            )
+        elif phase == "blocked":
+            self._state(
+                AssistantState.BLOCKED,
+                "Mission bloquée en sécurité…",
+            )
 
     @Slot()
     def stop(self) -> None:
@@ -237,6 +289,9 @@ class AssistantWorker(QObject):
         user_text: str,
         intent: ToolIntent,
     ) -> bool:
+        if settings.semantic_missions_enabled:
+            # The opt-in native mission path must not be bypassed by a shortcut.
+            return False
         if not self._is_simple_direct_action(user_text, intent):
             return False
 
@@ -395,6 +450,7 @@ class AssistantWorker(QObject):
             "Compréhension de votre demande…",
         )
 
+        self._autonomous_research_announced = False
         try:
             turn = self._agent.run(
                 user_text,
@@ -541,4 +597,6 @@ class AssistantWorker(QObject):
                 f"Erreur · {type(exc).__name__}",
             )
         finally:
+            if self._runtime_bus is not None:
+                self._runtime_bus.unsubscribe(None, self._forward_runtime_event)
             self.finished.emit()

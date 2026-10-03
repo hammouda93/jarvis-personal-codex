@@ -5,8 +5,9 @@ import os
 import sqlite3
 import threading
 import time
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 from .kernel_contracts import MissionContext, MissionStatus
 
@@ -29,11 +30,16 @@ class MissionContextStore:
         self._lock = threading.RLock()
         self._init_db()
 
-    def _connect(self) -> sqlite3.Connection:
+    @contextmanager
+    def _connect(self) -> Iterator[sqlite3.Connection]:
         conn = sqlite3.connect(str(self.path), timeout=5.0)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA journal_mode=WAL")
-        return conn
+        try:
+            conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA journal_mode=WAL")
+            with conn:
+                yield conn
+        finally:
+            conn.close()
 
     def _init_db(self) -> None:
         with self._lock, self._connect() as conn:
@@ -74,6 +80,7 @@ class MissionContextStore:
         """Insert/update with optional optimistic concurrency control."""
         now = time.time()
         with self._lock, self._connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
             row = conn.execute(
                 "SELECT version, created_at FROM mission_contexts WHERE mission_id=?",
                 (context.mission_id,),
@@ -201,12 +208,21 @@ class MissionContextStore:
     ) -> bool:
         now = time.time()
         with self._lock, self._connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(
+                "SELECT state_json FROM mission_contexts WHERE mission_id=?",
+                (str(mission_id),),
+            ).fetchone()
+            if row is None:
+                return False
+            state = json.loads(row["state_json"])
+            state["status"] = status.value
             cursor = conn.execute(
                 """
                 UPDATE mission_contexts
-                SET status=?, updated_at=?
+                SET status=?, state_json=?, version=version+1, updated_at=?
                 WHERE mission_id=?
                 """,
-                (status.value, now, str(mission_id)),
+                (status.value, json.dumps(state, ensure_ascii=False), now, str(mission_id)),
             )
             return cursor.rowcount > 0
