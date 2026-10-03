@@ -8,11 +8,49 @@ from unittest.mock import patch
 
 from jarvis_agent.agent_knowledge import AgentKnowledgeStore
 from jarvis_agent.config import settings as real_settings
-from jarvis_agent.native_tools import NativeToolRegistry
+from jarvis_agent.native_tools import (
+    NativeToolRegistry,
+    _window_items_from_result,
+    _window_title_matches_application,
+)
 from jarvis_agent.tools import ToolResult
 
 
 class NativeToolRegistryTests(unittest.TestCase):
+    def test_window_title_match_is_generic_and_not_substring_only(self):
+        self.assertTrue(
+            _window_title_matches_application("WhatsApp", "WhatsApp")
+        )
+        self.assertTrue(
+            _window_title_matches_application(
+                "Cursor — project.py",
+                "Cursor",
+            )
+        )
+        self.assertFalse(
+            _window_title_matches_application(
+                "Photo Studio Beta",
+                "WhatsApp",
+            )
+        )
+
+    def test_window_list_result_parser_accepts_list_and_fallback_object(self):
+        result = SimpleNamespace(
+            success=True,
+            detail='[{"title":"One"}]',
+        )
+        self.assertEqual(
+            _window_items_from_result(result)[0]["title"],
+            "One",
+        )
+        result.detail = (
+            '{"windows":[{"title":"Two"}],"fallback":"win32"}'
+        )
+        self.assertEqual(
+            _window_items_from_result(result)[0]["title"],
+            "Two",
+        )
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.knowledge = AgentKnowledgeStore(

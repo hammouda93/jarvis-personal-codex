@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import difflib
 import json
 import os
 import sqlite3
+import time
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Any
@@ -53,6 +55,95 @@ class AgentActionResult:
             },
             ensure_ascii=False,
         )
+
+
+
+def _window_items_from_result(result) -> list[dict[str, Any]]:
+    if not getattr(result, "success", False):
+        return []
+    try:
+        raw = json.loads(str(getattr(result, "detail", "") or "[]"))
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return []
+    if isinstance(raw, list):
+        return [item for item in raw if isinstance(item, dict)]
+    if isinstance(raw, dict):
+        return [
+            item
+            for item in list(raw.get("windows") or [])
+            if isinstance(item, dict)
+        ]
+    return []
+
+
+def _window_title_matches_application(title: str, *names: str) -> bool:
+    current = normalize(str(title or ""))
+    if not current:
+        return False
+    current_tokens = {
+        token for token in current.split() if len(token) >= 2
+    }
+    for raw in names:
+        expected = normalize(str(raw or ""))
+        if not expected:
+            continue
+        if current == expected:
+            return True
+        expected_tokens = {
+            token for token in expected.split() if len(token) >= 2
+        }
+        if (
+            expected_tokens
+            and expected_tokens <= current_tokens
+            and len(expected) >= 4
+        ):
+            return True
+        if min(len(current), len(expected)) >= 5:
+            ratio = difflib.SequenceMatcher(
+                None, expected, current
+            ).ratio()
+            if ratio >= 0.72:
+                return True
+    return False
+
+
+def _verified_visible_application(
+    requested_name: str,
+    *,
+    candidate_name: str = "",
+    timeout_s: float = 4.0,
+) -> dict[str, Any] | None:
+    """Poll visible top-level windows and return structured proof."""
+    deadline = time.monotonic() + max(0.1, float(timeout_s))
+    last_titles: list[str] = []
+    while True:
+        result = list_windows(limit=30)
+        items = _window_items_from_result(result)
+        last_titles = [
+            str(item.get("title") or "")[:180]
+            for item in items
+            if str(item.get("title") or "").strip()
+        ]
+        for item in items:
+            title = str(item.get("title") or "")
+            if _window_title_matches_application(
+                title,
+                requested_name,
+                candidate_name,
+            ):
+                return {
+                    "verified": True,
+                    "proof": {
+                        "type": "visible_window",
+                        "title": title[:180],
+                        "requested_name": requested_name[:180],
+                        "candidate_name": candidate_name[:180],
+                    },
+                    "observed_windows": last_titles[:12],
+                }
+        if time.monotonic() >= deadline:
+            return None
+        time.sleep(0.20)
 
 
 class NativeToolRegistry:
@@ -747,6 +838,61 @@ class NativeToolRegistry:
                     if fallback.success:
                         result = fallback
             self._record_app_launch(target, result)
+            if result.success and settings.verify_app_launch_enabled:
+                candidate_name = target
+                launch_detail: dict[str, Any] = {}
+                try:
+                    parsed = json.loads(result.detail or "{}")
+                    if isinstance(parsed, dict):
+                        launch_detail = parsed
+                        resolution = launch_detail.get("resolution")
+                        candidate = (
+                            resolution.get("candidate")
+                            if isinstance(resolution, dict)
+                            else None
+                        )
+                        if isinstance(candidate, dict):
+                            candidate_name = str(
+                                candidate.get("name") or target
+                            )
+                except (TypeError, ValueError, json.JSONDecodeError):
+                    pass
+
+                proof = _verified_visible_application(
+                    target,
+                    candidate_name=candidate_name,
+                    timeout_s=settings.app_launch_verify_timeout_s,
+                )
+                if proof is None:
+                    result = ToolResult(
+                        False,
+                        (
+                            f"Windows a accepté le lancement de {target}, "
+                            "mais aucune fenêtre correspondante n'a pu être vérifiée."
+                        ),
+                        json.dumps(
+                            {
+                                **launch_detail,
+                                "launch_accepted": True,
+                                "verified": False,
+                                "reason": "application_window_not_verified",
+                            },
+                            ensure_ascii=False,
+                        ),
+                    )
+                else:
+                    result = ToolResult(
+                        True,
+                        f"{target} est ouvert et sa fenêtre est visible.",
+                        json.dumps(
+                            {
+                                **launch_detail,
+                                **proof,
+                                "launch_accepted": True,
+                            },
+                            ensure_ascii=False,
+                        ),
+                    )
             return self._convert(name, result)
 
         if name == "open_file":

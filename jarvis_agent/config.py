@@ -170,6 +170,14 @@ class Settings:
     recovery_max_same_tool_calls: int = _int(
         "JARVIS_RECOVERY_MAX_SAME_TOOL_CALLS", 7
     )
+    verify_app_launch_enabled: bool = (
+        False
+        if compatibility_baseline
+        else _bool("JARVIS_VERIFY_APP_LAUNCH", True)
+    )
+    app_launch_verify_timeout_s: float = _float(
+        "JARVIS_APP_LAUNCH_VERIFY_TIMEOUT_S", 4.0
+    )
     model_telemetry_enabled: bool = _bool(
         "JARVIS_MODEL_TELEMETRY_ENABLED",
         False,
