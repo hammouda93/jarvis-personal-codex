@@ -669,30 +669,34 @@ class NativeToolRegistry:
             if not self._safe_target(target):
                 return self._error(name, "Le nom de l'application est trop vague.")
 
-            normalized = normalize(target)
-            known = {
-                "chrome": "chrome",
-                "google chrome": "chrome",
-                "spotify": "spotify",
-                "cursor": "cursor",
-                "vs code": "vscode",
-                "vscode": "vscode",
-                "visual studio code": "vscode",
-                "bloc notes": "notepad",
-                "bloc-notes": "notepad",
-                "notepad": "notepad",
-                "capture ecran": "snippingtool",
-                "outil capture": "snippingtool",
-                "snipping tool": "snippingtool",
-            }
-            if normalized in known:
-                result = execute(ToolIntent("app.open", {"app": known[normalized]}))
-                if not result.success:
-                    result = execute(
-                        ToolIntent("app.open_named", {"query": target})
+            # Generic Windows discovery is authoritative for named apps.
+            # Historical app.open handlers remain only as a compatibility
+            # fallback while real Windows regressions are collected.
+            result = execute(ToolIntent("app.open_named", {"query": target}))
+            if not result.success:
+                normalized = normalize(target)
+                legacy_aliases = {
+                    "chrome": "chrome",
+                    "google chrome": "chrome",
+                    "spotify": "spotify",
+                    "cursor": "cursor",
+                    "vs code": "vscode",
+                    "vscode": "vscode",
+                    "visual studio code": "vscode",
+                    "bloc notes": "notepad",
+                    "bloc-notes": "notepad",
+                    "notepad": "notepad",
+                    "capture ecran": "snippingtool",
+                    "outil capture": "snippingtool",
+                    "snipping tool": "snippingtool",
+                }
+                legacy = legacy_aliases.get(normalized)
+                if legacy:
+                    fallback = execute(
+                        ToolIntent("app.open", {"app": legacy})
                     )
-            else:
-                result = execute(ToolIntent("app.open_named", {"query": target}))
+                    if fallback.success:
+                        result = fallback
             self._record_app_launch(target, result)
             return self._convert(name, result)
 
