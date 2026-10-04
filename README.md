@@ -10,6 +10,9 @@ The current memory and optional mission-plan milestone is described in the
 Use the [human validation guide](docs/PERSONAL_AI_AGENT_MANUAL_VALIDATION.md)
 to test persistence across restarts and the experimental mission tools.
 
+The [October 4 voice-memory fix](docs/DECISION_MEMORY_VOICE_2026-10-04.md)
+documents the additional spoken formulations and the real Cerebras check.
+
 Python script that listens to your default microphone and runs a **double-clap** welcome flow (Spotify, Chrome windows, ElevenLabs voice, Cursor). See constants at the top of `jarvis.py` for behavior and tuning.
 
 ## Setup

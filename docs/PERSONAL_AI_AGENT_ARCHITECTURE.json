@@ -118,7 +118,7 @@
     },
     {
       "path": "jarvis_agent/agent_runtime.py",
-      "lines": 3225,
+      "lines": 3248,
       "classes": [
         "AgentTurnResult",
         "AgentRuntime",
@@ -165,6 +165,7 @@
         ".connectors",
         ".event_bus",
         ".event_journal",
+        ".memory",
         ".mission_semantics",
         ".native_tools",
         ".semantic_mission_runtime",
@@ -949,7 +950,7 @@
     },
     {
       "path": "jarvis_agent/memory.py",
-      "lines": 173,
+      "lines": 193,
       "classes": [
         "MemoryItem",
         "LocalMemory"
@@ -957,7 +958,8 @@
       "functions": [
         "_default_db_path",
         "_fold",
-        "search_terms"
+        "search_terms",
+        "recall_queries"
       ],
       "imports": [
         "__future__",
@@ -1903,7 +1905,7 @@
     "test_memory.py": 4,
     "test_mission.py": 3,
     "test_native_tools.py": 19,
-    "test_persistent_memory_runtime.py": 17,
+    "test_persistent_memory_runtime.py": 27,
     "test_recognition_retry.py": 1,
     "test_registry.py": 4,
     "test_runtime_observability.py": 24,
@@ -1915,5 +1917,5 @@
     "test_ui_logging.py": 1,
     "test_windows_perception.py": 23
   },
-  "total_test_methods": 342
+  "total_test_methods": 352
 }

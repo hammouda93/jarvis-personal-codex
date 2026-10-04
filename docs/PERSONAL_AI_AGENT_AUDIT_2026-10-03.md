@@ -229,3 +229,25 @@ n'est déclaré réussi.
 
 Voir la [décision et les limites](DECISION_PERSISTENT_MEMORY_AND_MISSIONS.md)
 et les [tests humains à effectuer](PERSONAL_AI_AGENT_MANUAL_VALIDATION.md).
+
+## Correctif vocal du 4 octobre 2026
+
+Un journal humain confirme une écriture SQLite vérifiée d'Atlas, puis révèle
+deux formulations non couvertes : « garde dans mémoire » masquait l'outil
+d'enregistrement, et « C'est quoi mon projet fictif test ? » ne chargeait
+aucun souvenir après relance. Ces cas ont été reproduits avant correction.
+
+Le détecteur accepte désormais les variantes explicites avec « dans mémoire »
+et conserve les négations. Le rappel couvre les questions familières et peut
+fournir des candidats partiels bornés, avec le terme omis explicitement indiqué.
+La recherche native stricte reste conjonctive ; les termes capitalisés ou
+entre guillemets sont conservés dans les variantes. La compréhension de toutes
+les paraphrases et de tous les noms en minuscules n'est pas revendiquée.
+
+**352 tests OK, 328,387 s**, dont 10 nouveaux tests et un rappel étendu au
+second processus. **Quatre scénarios avec Cerebras réel** sur une base fictive
+et une surface d'outils limitée à SQLite ont enregistré puis retrouvé Atlas et
+Inception dans des sessions neuves. La configuration de secours Cerebras a
+été utilisée. Aucun microphone ni action Windows réelle dans ces vérifications.
+
+Voir le [diagnostic, le correctif et ses limites](DECISION_MEMORY_VOICE_2026-10-04.md).

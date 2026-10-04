@@ -40,7 +40,7 @@ un une mon ma mes ton ta tes son sa ses notre nos votre vos leur leurs je tu il
 elle nous vous ils elles sur dans avec pour et ou au aux me te se moi toi
 rappelle rappelles souviens comment appelle appellent appele appelee appeler nom noms
 peux pouvez pourrais pourrait veux voudrais dire dit dis donne donner rappellez
-sais savez souvenir souvient s y en ai as a avait avait ete etre bien deja
+sais savez souvenir souvient s y en ai as a avait avait ete etre bien deja plait stp svp
 remember recall what which the an of about my your how does do is are was were
 can could would you tell me please called named name have has it this that
 ما ماذا كيف هو هي في من عن هل اسم يسمى تذكر اتذكر
@@ -53,6 +53,26 @@ def search_terms(query: str) -> list[str]:
     return list(dict.fromkeys(
         word for word in words if len(word) >= 2 and word not in _QUESTION_WORDS
     ))[:8]
+
+
+def recall_queries(query: str) -> Iterator[tuple[str, tuple[str, ...]]]:
+    """Try exact recall first, then bounded, explicitly partial suggestions.
+
+    The native search remains conjunctive. Suggestions may omit one term only
+    when at least two significant terms remain. Quoted and capitalized terms
+    are preserved so an explicit entity name is not silently replaced.
+    """
+    yield query, ()
+    words = search_terms(query)
+    if len(words) < 3:
+        return
+    protected = {_fold(word) for word in re.findall(r"[^\W_]+", query)
+        if word[:1].isupper()}
+    for quoted in re.finditer(r'''"([^"]+)"|«([^»]+)»|(?<!\w)'([^']+)'(?!\w)''', query):
+        protected.update(search_terms(next(part for part in quoted.groups() if part is not None)))
+    for word in reversed(words):
+        if word not in protected:
+            yield " ".join(item for item in words if item != word), (word,)
 
 
 @dataclass(frozen=True)

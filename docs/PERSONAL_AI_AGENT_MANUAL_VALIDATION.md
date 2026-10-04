@@ -30,6 +30,24 @@ Si `JARVIS_MEMORY_DB_PATH` est défini, garder le même chemin entre les lanceme
 Un chemin relatif est résolu depuis la racine du projet. Les souvenirs existants
 ne sont pas effacés. Ce correctif est actif sans l'option de missions ci-dessous.
 
+Complément après l'essai vocal du 4 octobre 2026 :
+
+1. Après relance, demander **« C'est quoi mon projet fictif test ? »**. Le
+   journal doit montrer un rappel réel. Si seul Atlas a été enregistré et
+   correspond, la réponse doit identifier Atlas ; des souvenirs contradictoires
+   doivent conduire à une précision, sans inventer un projet nommé « test ».
+2. Dire **« S'il te plaît, garde dans mémoire que je veux regarder des films.
+   Le premier film, c'est Inception. »** L'outil `remember_information` doit être
+   disponible et réussir avec `sqlite_readback`.
+3. Fermer, relancer et demander **« Quel est le premier film que je veux regarder ? »**
+   Réponse attendue : Inception, après consultation de la mémoire.
+
+Vérifier la transcription avant de comparer les noms : le journal reçu
+contenait « Atlas », sans « Bleu ». La mémoire conserve le texte compris par
+Jarvis ; un mot absent de la transcription relève d'abord du diagnostic STT.
+Un log `match=partial` indique un souvenir candidat dont un terme de la question
+ne correspond pas, pas une confirmation de ce terme.
+
 ## 2. Plans de mission persistants — option expérimentale
 
 Fermer Jarvis, puis ajouter avant le lancement :
