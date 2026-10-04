@@ -259,6 +259,7 @@ def build_default_registry() -> CapabilityRegistry:
                 "communications.compose",
                 "communications.send",
             ),
+            allowed_tools=("connector_read", "connector_write", "connector_external"),
             allowed_connectors=("gmail", "whatsapp", "instagram"),
             memory_scopes=(
                 KnowledgeScope.AGENT,
@@ -305,7 +306,9 @@ def build_default_registry() -> CapabilityRegistry:
                 "developer.patch",
                 "developer.test",
                 "developer.replay",
+                "developer.publish",
             ),
+            allowed_tools=("connector_read", "connector_external"),
             allowed_connectors=("github",),
             memory_scopes=(
                 KnowledgeScope.CORE,
@@ -343,6 +346,75 @@ def build_default_registry() -> CapabilityRegistry:
                 description="Replay a scenario in an isolated environment.",
                 risk=RiskLevel.REVERSIBLE,
                 tags=("developer", "replay", "sandbox"),
+            ),
+            CapabilitySpec(
+                name="developer.publish",
+                description="Publish an approved external repository change.",
+                risk=RiskLevel.EXTERNAL_SIDE_EFFECT,
+                requires_confirmation=True,
+                tags=("developer", "connector", "external"),
+            ),
+        ),
+    )
+
+    registry.register_agent(
+        AgentManifest(
+            agent_id="personal_admin",
+            display_name="Personal Admin Agent",
+            version="0.1",
+            capabilities=("personal_admin.read", "personal_admin.write"),
+            allowed_tools=("connector_read", "connector_external"),
+            allowed_connectors=("google_calendar",),
+            memory_scopes=(KnowledgeScope.AGENT, KnowledgeScope.USER, KnowledgeScope.TEST),
+            description="Calendar and personal-administration workflows through controlled connectors.",
+        ),
+        (
+            CapabilitySpec(
+                name="personal_admin.read",
+                description="Read authorized personal-administration data.",
+                risk=RiskLevel.READ,
+                tags=("connector", "personal_admin"),
+            ),
+            CapabilitySpec(
+                name="personal_admin.write",
+                description="Perform an approved external admin mutation.",
+                risk=RiskLevel.EXTERNAL_SIDE_EFFECT,
+                requires_confirmation=True,
+                tags=("connector", "personal_admin", "external"),
+            ),
+        ),
+    )
+
+    registry.register_agent(
+        AgentManifest(
+            agent_id="data",
+            display_name="Data Agent",
+            version="0.1",
+            capabilities=("data.read", "data.write", "data.share"),
+            allowed_tools=("connector_read", "connector_write", "connector_external"),
+            allowed_connectors=("google_drive",),
+            memory_scopes=(KnowledgeScope.AGENT, KnowledgeScope.USER, KnowledgeScope.TEST),
+            description="Authorized file/data access separated from external sharing side effects.",
+        ),
+        (
+            CapabilitySpec(
+                name="data.read",
+                description="Read authorized external data.",
+                risk=RiskLevel.READ,
+                tags=("connector", "data"),
+            ),
+            CapabilitySpec(
+                name="data.write",
+                description="Perform a reversible authorized data mutation.",
+                risk=RiskLevel.REVERSIBLE,
+                tags=("connector", "data", "write"),
+            ),
+            CapabilitySpec(
+                name="data.share",
+                description="Share data with an external principal.",
+                risk=RiskLevel.EXTERNAL_SIDE_EFFECT,
+                requires_confirmation=True,
+                tags=("connector", "data", "external"),
             ),
         ),
     )
@@ -419,6 +491,7 @@ def build_default_registry() -> CapabilityRegistry:
             capabilities=("interaction.session",),
             allowed_tools=(
                 "get_current_time",
+                "list_connectors",
                 "reset_conversation_context",
                 "return_to_standby",
             ),

@@ -73,17 +73,68 @@ _register(
     "memory", "memory.write", SyscallKind.MEMORY,
 )
 _register(
-    ("get_current_time", "reset_conversation_context", "return_to_standby"),
+    ("get_current_time", "list_connectors", "reset_conversation_context", "return_to_standby"),
     "interaction", "interaction.session",
 )
+
+_CONNECTOR_ROUTES = {
+    "gmail": {
+        "connector_read": ("communications", "communications.read"),
+        "connector_write": ("communications", "communications.compose"),
+        "connector_external": ("communications", "communications.send"),
+    },
+    "whatsapp": {
+        "connector_read": ("communications", "communications.read"),
+        "connector_write": ("communications", "communications.compose"),
+        "connector_external": ("communications", "communications.send"),
+    },
+    "instagram": {
+        "connector_read": ("communications", "communications.read"),
+        "connector_write": ("communications", "communications.compose"),
+        "connector_external": ("communications", "communications.send"),
+    },
+    "google_calendar": {
+        "connector_read": ("personal_admin", "personal_admin.read"),
+        "connector_external": ("personal_admin", "personal_admin.write"),
+    },
+    "google_drive": {
+        "connector_read": ("data", "data.read"),
+        "connector_write": ("data", "data.write"),
+        "connector_external": ("data", "data.share"),
+    },
+    "github": {
+        "connector_read": ("developer", "developer.inspect"),
+        "connector_external": ("developer", "developer.publish"),
+    },
+}
 
 
 class RuntimeCapabilityResolver:
     """Explicit tool -> agent/capability mapping for the live runtime."""
 
-    def resolve(self, tool_name: str) -> LiveCapabilityRoute | None:
+    def resolve(
+        self,
+        tool_name: str,
+        arguments: dict[str, Any] | None = None,
+    ) -> LiveCapabilityRoute | None:
         name = str(tool_name or "").strip()
         raw = _TOOL_ROUTES.get(name)
+        if raw is None and name in {
+            "connector_read", "connector_write", "connector_external"
+        }:
+            connector_id = str(
+                dict(arguments or {}).get("connector_id") or ""
+            ).strip()
+            dynamic = _CONNECTOR_ROUTES.get(connector_id, {}).get(name)
+            if dynamic is None:
+                return None
+            agent_id, capability = dynamic
+            return LiveCapabilityRoute(
+                tool_name=name,
+                agent_id=agent_id,
+                capability=capability,
+                syscall_kind=SyscallKind.CONNECTOR,
+            )
         if raw is None:
             return None
         agent_id, capability, kind = raw
@@ -208,7 +259,7 @@ class KernelGovernedToolRegistry:
         name: str,
         arguments: dict[str, Any] | None = None,
     ):
-        route = self.resolver.resolve(name)
+        route = self.resolver.resolve(name, arguments)
         if route is None:
             return None, None, None
         request = self._request(route, arguments)
