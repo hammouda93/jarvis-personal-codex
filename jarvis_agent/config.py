@@ -172,6 +172,11 @@ class Settings:
     live_kernel_state_dir: str = (
         os.getenv("JARVIS_LIVE_KERNEL_STATE_DIR") or ""
     ).strip()
+    connector_runtime_enabled: bool = (
+        False
+        if compatibility_baseline
+        else _bool("JARVIS_CONNECTOR_RUNTIME_ENABLED", True)
+    )
     recovery_guard_enabled: bool = (
         False
         if compatibility_baseline

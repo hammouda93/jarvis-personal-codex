@@ -20,6 +20,7 @@ from .tracing_runtime import _verification_evidence
 READ_ONLY_TOOLS = frozenset({
     "get_current_time", "list_windows", "inspect_active_window", "observe_screen",
     "recall_information", "search_agent_knowledge", "agent_knowledge_stats",
+    "list_connectors", "connector_read",
     "msf_capabilities", "msf_describe_schema", "msf_count_records", "msf_query_records",
     "msf_readonly_sql", "msf_search_code", "msf_list_routes", "msf_resolve_route",
 })

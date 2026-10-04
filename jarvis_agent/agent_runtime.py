@@ -3294,6 +3294,11 @@ def build_agent_runtime(*, event_bus: MissionEventBus | None = None) -> AgentRun
         event_bus = MissionEventBus()
 
     tools = NATIVE_TOOLS
+    if settings.connector_runtime_enabled:
+        from .connector_runtime import ConnectorToolRegistry
+
+        tools = ConnectorToolRegistry(tools)
+
     recovery_tools = None
     if settings.recovery_guard_enabled:
         from .recovery_runtime import RecoveryToolRegistry
