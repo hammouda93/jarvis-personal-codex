@@ -164,6 +164,14 @@ class Settings:
     live_kernel_fail_closed: bool = _bool(
         "JARVIS_LIVE_KERNEL_FAIL_CLOSED", True
     )
+    live_kernel_scheduler_enabled: bool = (
+        False
+        if compatibility_baseline
+        else _bool("JARVIS_LIVE_KERNEL_SCHEDULER_ENABLED", True)
+    )
+    live_kernel_state_dir: str = (
+        os.getenv("JARVIS_LIVE_KERNEL_STATE_DIR") or ""
+    ).strip()
     recovery_guard_enabled: bool = (
         False
         if compatibility_baseline

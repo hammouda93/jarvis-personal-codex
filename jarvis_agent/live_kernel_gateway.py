@@ -119,6 +119,7 @@ class KernelGovernedToolRegistry:
         resolver: RuntimeCapabilityResolver | None = None,
         event_bus: MissionEventBus | None = None,
         fail_closed: bool = True,
+        scheduler=None,
     ):
         self.delegate = delegate
         self.registry = registry or DEFAULT_CAPABILITY_REGISTRY
@@ -126,6 +127,7 @@ class KernelGovernedToolRegistry:
         self.resolver = resolver or RuntimeCapabilityResolver()
         self.event_bus = event_bus
         self.fail_closed = bool(fail_closed)
+        self.scheduler = scheduler
         self._local = threading.local()
 
     def __getattr__(self, name: str):
@@ -323,6 +325,49 @@ class KernelGovernedToolRegistry:
                 ),
             )
 
+        scheduler_response = None
+        if self.scheduler is not None:
+            self._emit(
+                EventKind.SYSCALL_QUEUED,
+                request,
+                payload={
+                    "tool_name": tool_name,
+                    "risk": decision.risk.value,
+                    "approved": bool(approved),
+                },
+            )
+            try:
+                self.scheduler.start(request)
+            except Exception as exc:
+                self._emit(
+                    EventKind.SYSCALL_COMPLETED,
+                    request,
+                    success=False,
+                    payload={
+                        "tool_name": tool_name,
+                        "status": "scheduler_failed",
+                        "error": f"{type(exc).__name__}: {exc}"[:500],
+                    },
+                )
+                return AgentActionResult(
+                    name=tool_name,
+                    success=False,
+                    message=(
+                        "Le Kernel n'a pas pu planifier cette action "
+                        "de manière sûre."
+                    ),
+                    detail=json.dumps(
+                        {
+                            "kernel_governance": True,
+                            "scheduler": True,
+                            "reason": "scheduler_start_failed",
+                            "error": str(exc)[:500],
+                            "verified": False,
+                        },
+                        ensure_ascii=False,
+                    ),
+                )
+
         self._emit(
             EventKind.SYSCALL_STARTED,
             request,
@@ -330,21 +375,60 @@ class KernelGovernedToolRegistry:
                 "tool_name": tool_name,
                 "risk": decision.risk.value,
                 "approved": bool(approved),
+                "scheduler": self.scheduler is not None,
             },
         )
-        result = self.delegate.execute(
-            tool_name, arguments, approved=approved
-        )
+        try:
+            result = self.delegate.execute(
+                tool_name, arguments, approved=approved
+            )
+        except Exception as exc:
+            if self.scheduler is not None:
+                self.scheduler.fail_exception(request.request_id, exc)
+            self._emit(
+                EventKind.SYSCALL_COMPLETED,
+                request,
+                success=False,
+                payload={
+                    "tool_name": tool_name,
+                    "risk": decision.risk.value,
+                    "approved": bool(approved),
+                    "status": "exception",
+                    "error": f"{type(exc).__name__}: {exc}"[:500],
+                },
+            )
+            raise
+
+        if self.scheduler is not None:
+            scheduler_response = self.scheduler.complete(
+                request.request_id,
+                success=result.success,
+                result={
+                    "tool_name": tool_name,
+                    "verified": bool(result.success),
+                },
+                error="" if result.success else str(result.detail or "")[:1200],
+            )
+
+        completed_payload = {
+            "tool_name": tool_name,
+            "risk": decision.risk.value,
+            "approved": bool(approved),
+            "status": "succeeded" if result.success else "failed",
+            "scheduler": self.scheduler is not None,
+        }
+        if scheduler_response is not None:
+            completed_payload.update(
+                {
+                    "waiting_ms": scheduler_response.waiting_ms,
+                    "turnaround_ms": scheduler_response.turnaround_ms,
+                }
+            )
         self._emit(
             EventKind.SYSCALL_COMPLETED,
             request,
             success=result.success,
-            payload={
-                "tool_name": tool_name,
-                "risk": decision.risk.value,
-                "approved": bool(approved),
-                "status": "succeeded" if result.success else "failed",
-            },
+            payload=completed_payload,
         )
         return result
 
@@ -355,6 +439,7 @@ class KernelGovernanceRuntime:
     def __init__(self, delegate, tools: KernelGovernedToolRegistry):
         self.delegate = delegate
         self.tools = tools
+        self._startup_recovery_logged = False
         self.event_bus = getattr(delegate, "event_bus", None) or tools.event_bus
         self.model = getattr(delegate, "model", "")
         self.provider_name = getattr(delegate, "provider_name", "")
@@ -370,9 +455,24 @@ class KernelGovernanceRuntime:
 
     def run(self, user_text: str, *, log=None, phase=None):
         mission_id = self.tools.begin_turn(user_text)
+        scheduler_enabled = self.tools.scheduler is not None
         if log:
             log(
                 "[KERNEL_LIVE] governance=1 "
-                f"mission_id={mission_id} authority=policy_only scheduler=0"
+                f"mission_id={mission_id} authority=policy+execution "
+                f"scheduler={int(scheduler_enabled)}"
             )
+            if scheduler_enabled and not self._startup_recovery_logged:
+                summary = self.tools.scheduler.startup_recovery_summary()
+                data = summary.as_dict()
+                if (
+                    data["running_uncertain_count"]
+                    or data["queued_safe_to_retry_count"]
+                ):
+                    log(
+                        "[KERNEL_RECOVERY_REQUIRED] "
+                        f"running_uncertain={data['running_uncertain_count']} "
+                        f"queued_safe_to_retry={data['queued_safe_to_retry_count']}"
+                    )
+                self._startup_recovery_logged = True
         return self.delegate.run(user_text, log=log, phase=phase)

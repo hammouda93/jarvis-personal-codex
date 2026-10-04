@@ -3307,13 +3307,26 @@ def build_agent_runtime(*, event_bus: MissionEventBus | None = None) -> AgentRun
         tools = recovery_tools
 
     governance_tools = None
+    live_kernel_scheduler = None
     if settings.live_kernel_governance_enabled:
         from .live_kernel_gateway import KernelGovernedToolRegistry
+
+        if settings.live_kernel_scheduler_enabled:
+            from .live_kernel_scheduler import LiveKernelScheduler
+
+            live_kernel_scheduler = LiveKernelScheduler(
+                base_dir=(
+                    settings.live_kernel_state_dir
+                    if settings.live_kernel_state_dir
+                    else None
+                ),
+            )
 
         governance_tools = KernelGovernedToolRegistry(
             tools,
             event_bus=event_bus,
             fail_closed=settings.live_kernel_fail_closed,
+            scheduler=live_kernel_scheduler,
         )
         tools = governance_tools
 

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import tempfile
 import unittest
+from pathlib import Path
 
 from jarvis_agent.capability_registry import DEFAULT_CAPABILITY_REGISTRY
 from jarvis_agent.live_kernel_gateway import (
@@ -9,6 +11,8 @@ from jarvis_agent.live_kernel_gateway import (
     RuntimeCapabilityResolver,
 )
 from jarvis_agent.native_tools import AgentActionResult
+from jarvis_agent.live_kernel_scheduler import LiveKernelScheduler
+from jarvis_agent.kernel_contracts import SyscallStatus
 
 
 class FakeTools:
@@ -91,6 +95,23 @@ class LiveKernelGovernanceTests(unittest.TestCase):
         )
         self.assertTrue(allowed.success)
         self.assertTrue(self.delegate.calls[0][2])
+
+    def test_authorized_tool_flows_through_durable_scheduler(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            scheduler = LiveKernelScheduler(base_dir=Path(tmp))
+            registry = KernelGovernedToolRegistry(
+                self.delegate,
+                scheduler=scheduler,
+            )
+            registry.begin_turn("observe")
+            result = registry.execute("inspect_active_window", {})
+            self.assertTrue(result.success)
+            rows = scheduler.store.for_mission(
+                registry._turn().mission_id
+            )
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0]["status"], SyscallStatus.SUCCEEDED)
+            self.assertEqual(scheduler.snapshot()["active_total"], 0)
 
     def test_tool_is_scoped_to_declared_agent_manifest(self):
         route = RuntimeCapabilityResolver().resolve("write_ui_element")

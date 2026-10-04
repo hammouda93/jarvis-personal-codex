@@ -34,6 +34,7 @@ jobs:
           jarvis_agent/research_broker.py
           jarvis_agent/recovery_runtime.py
           jarvis_agent/live_kernel_gateway.py
+          jarvis_agent/live_kernel_scheduler.py
           jarvis_agent/capability_registry.py
           jarvis_agent/kernel_policy.py
           jarvis_agent/tools.py
@@ -51,6 +52,7 @@ jobs:
           tests.test_recovery_runtime
           tests.test_runtime_phases
           tests.test_live_kernel_governance
+          tests.test_live_kernel_scheduler
           -v
       - name: Run launch compatibility regressions
         run: python -m unittest tests.test_native_tools -v
