@@ -24,6 +24,7 @@ logs/
 *.log
 jarvis_diagnostics_*/
 *.sqlite
+*.sqlite-*
 *.sqlite3
 *.sqlite3-*
 *.db

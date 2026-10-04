@@ -237,6 +237,62 @@ def build_default_connector_registry() -> ConnectorRegistry:
 
     registry.register(
         ConnectorSpec(
+            connector_id="google_calendar",
+            display_name="Google Calendar",
+            capabilities=(
+                ConnectorCapability("list_events", "List authorized calendar events.", RiskLevel.READ),
+                ConnectorCapability("get_event", "Read one authorized calendar event.", RiskLevel.READ),
+                ConnectorCapability(
+                    "create_event", "Create an event on an authorized calendar.",
+                    RiskLevel.EXTERNAL_SIDE_EFFECT, requires_confirmation=True,
+                ),
+                ConnectorCapability(
+                    "update_event", "Update an existing calendar event.",
+                    RiskLevel.EXTERNAL_SIDE_EFFECT, requires_confirmation=True,
+                ),
+                ConnectorCapability(
+                    "delete_event", "Delete an existing calendar event.",
+                    RiskLevel.DESTRUCTIVE, requires_confirmation=True,
+                ),
+            ),
+            preferred_backends=(
+                ConnectorBackend.API,
+                ConnectorBackend.MCP,
+                ConnectorBackend.BROWSER,
+            ),
+            auth_kind="oauth2",
+            enabled=False,
+            notes="Prefer Google Calendar API with least-privilege OAuth.",
+        )
+    )
+
+    registry.register(
+        ConnectorSpec(
+            connector_id="google_drive",
+            display_name="Google Drive",
+            capabilities=(
+                ConnectorCapability("search_files", "Search authorized Drive metadata.", RiskLevel.READ),
+                ConnectorCapability("read_file", "Read an authorized Drive file.", RiskLevel.READ),
+                ConnectorCapability("upload_file", "Upload a file to Drive.", RiskLevel.REVERSIBLE),
+                ConnectorCapability("update_file", "Update an authorized Drive file.", RiskLevel.REVERSIBLE),
+                ConnectorCapability(
+                    "share_file", "Create or modify a Drive permission.",
+                    RiskLevel.EXTERNAL_SIDE_EFFECT, requires_confirmation=True,
+                ),
+            ),
+            preferred_backends=(
+                ConnectorBackend.API,
+                ConnectorBackend.MCP,
+                ConnectorBackend.BROWSER,
+            ),
+            auth_kind="oauth2",
+            enabled=False,
+            notes="Prefer Drive API and drive.file where it satisfies the goal.",
+        )
+    )
+
+    registry.register(
+        ConnectorSpec(
             connector_id="github",
             display_name="GitHub",
             capabilities=(
@@ -247,8 +303,9 @@ def build_default_connector_registry() -> ConnectorRegistry:
                 ),
                 ConnectorCapability(
                     "create_change",
-                    "Create controlled code changes.",
-                    RiskLevel.REVERSIBLE,
+                    "Create a remote repository change.",
+                    RiskLevel.EXTERNAL_SIDE_EFFECT,
+                    requires_confirmation=True,
                 ),
             ),
             preferred_backends=(

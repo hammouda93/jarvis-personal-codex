@@ -15,6 +15,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from .windows_app_discovery import DEFAULT_WINDOWS_APP_DISCOVERY
+
 
 @dataclass(frozen=True)
 class ToolIntent:
@@ -920,14 +922,64 @@ def execute(intent: ToolIntent) -> ToolResult:
 
     if intent.name == "app.open_named":
         query = str(intent.args.get("query", "")).strip()
+
+        # Primary path: Windows registration data, not per-application rules.
+        # Resolution and launch are distinct from later UI verification.
+        discovery = DEFAULT_WINDOWS_APP_DISCOVERY.launch(query)
+        if discovery.success:
+            candidate = discovery.resolution.candidate
+            display = candidate.name if candidate is not None else query
+            return ToolResult(
+                True,
+                f"J'ai demandé à Windows d'ouvrir {display}.",
+                json.dumps(
+                    {
+                        "launch_accepted": True,
+                        "verified_visible": False,
+                        "launch_method": discovery.launch_method,
+                        "launch_target": discovery.launch_target,
+                        "resolution": discovery.resolution.as_dict(),
+                    },
+                    ensure_ascii=False,
+                ),
+            )
+        if discovery.resolution.status == "ambiguous":
+            choices = " | ".join(
+                f"{item.name} [{item.source}]"
+                for item in discovery.resolution.alternatives[:5]
+            )
+            return ToolResult(
+                False,
+                f"J'ai trouvé plusieurs applications proches de {query}.",
+                json.dumps(
+                    {
+                        "reason": "application_resolution_ambiguous",
+                        "choices": choices,
+                        "resolution": discovery.resolution.as_dict(),
+                    },
+                    ensure_ascii=False,
+                ),
+            )
+
+        # Compatibility fallback for machines where PowerShell/registry access
+        # is unavailable. This bounded scan remains generic.
         path, matches = _find_named_app(query)
         if path is not None:
             try:
                 os.startfile(str(path))
                 return ToolResult(
                     True,
-                    f"J'ai ouvert {path.stem}.",
-                    str(path),
+                    f"J'ai demandé à Windows d'ouvrir {path.stem}.",
+                    json.dumps(
+                        {
+                            "launch_accepted": True,
+                            "verified_visible": False,
+                            "launch_method": "legacy_bounded_scan",
+                            "launch_target": str(path),
+                            "resolution": discovery.resolution.as_dict(),
+                        },
+                        ensure_ascii=False,
+                    ),
                 )
             except OSError as exc:
                 return ToolResult(
@@ -945,7 +997,13 @@ def execute(intent: ToolIntent) -> ToolResult:
         return ToolResult(
             False,
             f"Je n'ai pas trouvé d'application correspondant à {query}.",
-            query,
+            json.dumps(
+                {
+                    "reason": "application_not_found",
+                    "resolution": discovery.resolution.as_dict(),
+                },
+                ensure_ascii=False,
+            ),
         )
 
 

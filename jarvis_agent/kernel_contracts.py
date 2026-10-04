@@ -16,7 +16,11 @@ class MissionStatus(str, Enum):
 
 
 class EventKind(str, Enum):
+    TURN_STARTED = "turn.started"
+    TURN_FINISHED = "turn.finished"
+    RUNTIME_PHASE = "runtime.phase"
     MISSION_CREATED = "mission.created"
+    MISSION_UPDATED = "mission.updated"
     USER_INPUT = "user.input"
     INTENT_RESOLVED = "intent.resolved"
     AGENT_SELECTED = "agent.selected"

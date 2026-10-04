@@ -5,9 +5,11 @@ import os
 import sqlite3
 import threading
 import time
+from contextlib import contextmanager
 from pathlib import Path
+from typing import Iterator
 
-from .task_graph import MissionTaskGraph, TaskNode, TaskStatus
+from .task_graph import MissionTaskGraph
 
 
 def _default_path() -> Path:
@@ -28,11 +30,16 @@ class TaskGraphStore:
         self._lock = threading.RLock()
         self._init_db()
 
-    def _connect(self) -> sqlite3.Connection:
+    @contextmanager
+    def _connect(self) -> Iterator[sqlite3.Connection]:
         conn = sqlite3.connect(str(self.path), timeout=5.0)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA journal_mode=WAL")
-        return conn
+        try:
+            conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA journal_mode=WAL")
+            with conn:
+                yield conn
+        finally:
+            conn.close()
 
     def _init_db(self) -> None:
         with self._lock, self._connect() as conn:
@@ -48,26 +55,8 @@ class TaskGraphStore:
 
     @staticmethod
     def _serialize(graph: MissionTaskGraph) -> str:
-        payload = {
-            "mission_id": graph.mission_id,
-            "nodes": [
-                {
-                    "task_id": node.task_id,
-                    "mission_id": node.mission_id,
-                    "capability": node.capability,
-                    "agent_id": node.agent_id,
-                    "dependencies": sorted(node.dependencies),
-                    "status": node.status.value,
-                    "priority": node.priority,
-                    "payload": dict(node.payload),
-                    "result": dict(node.result),
-                    "error": node.error,
-                }
-                for node in graph.nodes()
-            ],
-        }
         return json.dumps(
-            payload,
+            graph.as_dict(),
             ensure_ascii=False,
             separators=(",", ":"),
         )
@@ -103,24 +92,8 @@ class TaskGraphStore:
         if row is None:
             return None
         raw = json.loads(row["graph_json"] or "{}")
-        graph = MissionTaskGraph(str(raw.get("mission_id") or mission_id))
-        nodes = list(raw.get("nodes") or [])
-        # Add all nodes first so dependency validation can resolve forward refs.
-        for item in nodes:
-            node = TaskNode(
-                task_id=str(item["task_id"]),
-                mission_id=str(item["mission_id"]),
-                capability=str(item["capability"]),
-                agent_id=str(item["agent_id"]),
-                dependencies=set(item.get("dependencies") or []),
-                status=TaskStatus(item.get("status") or TaskStatus.PENDING.value),
-                priority=int(item.get("priority") or 100),
-                payload=dict(item.get("payload") or {}),
-                result=dict(item.get("result") or {}),
-                error=str(item.get("error") or ""),
-            )
-            graph.add(node)
-        return graph
+        raw.setdefault("mission_id", str(mission_id))
+        return MissionTaskGraph.from_dict(raw)
 
     def delete(self, mission_id: str) -> bool:
         with self._lock, self._connect() as conn:

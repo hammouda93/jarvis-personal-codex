@@ -7,8 +7,9 @@ import sqlite3
 import threading
 import time
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 from .kernel_contracts import EventKind, MissionStatus
 
@@ -19,6 +20,19 @@ _SECRET_RE = re.compile(
 _EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I)
 _HOME_RE = re.compile(
     r"(?i)(?:[A-Z]:\\Users\\[^\\\s]+|/home/[^/\s]+|/Users/[^/\s]+)"
+)
+_SECRET_TEXT_RE = re.compile(
+    r"(?i)\b(?:api[_ -]?key|password|token|secret|authorization)[\"']?"
+    r"\s*[:=]\s*(?:bearer\s+)?[\"']?[^\s\"',;}\]]+"
+)
+_BEARER_RE = re.compile(r"(?i)\bbearer\s+[A-Za-z0-9._~+/=-]+")
+_PROVIDER_KEY_RE = re.compile(
+    r"\b(?:gsk_[A-Za-z0-9]{20,}|csk[-_][A-Za-z0-9]{20,}|"
+    r"sk-(?:proj-)?[A-Za-z0-9_-]{24,}|gh[pousr]_[A-Za-z0-9]{30,})\b"
+)
+_PRIVATE_KEY_RE = re.compile(
+    r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----.*?"
+    r"(?:-----END (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|$)", re.S,
 )
 
 
@@ -42,7 +56,11 @@ def _safe_value(value: Any, *, depth: int = 0) -> Any:
     if value is None or isinstance(value, (bool, int, float)):
         return value
     if isinstance(value, str):
-        text = value
+        text = value[:10000]
+        text = _PRIVATE_KEY_RE.sub("<redacted>", text)
+        text = _SECRET_TEXT_RE.sub("<redacted>", text)
+        text = _BEARER_RE.sub("Bearer <redacted>", text)
+        text = _PROVIDER_KEY_RE.sub("<redacted>", text)
         text = _EMAIL_RE.sub("<email>", text)
         text = _HOME_RE.sub("<user-home>", text)
         if len(text) > 2400:
@@ -74,12 +92,17 @@ class StructuredEventJournal:
         self._lock = threading.RLock()
         self._init_db()
 
-    def _connect(self) -> sqlite3.Connection:
+    @contextmanager
+    def _connect(self) -> Iterator[sqlite3.Connection]:
         conn = sqlite3.connect(str(self.path), timeout=5.0)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("PRAGMA foreign_keys=ON")
-        return conn
+        try:
+            conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA foreign_keys=ON")
+            with conn:
+                yield conn
+        finally:
+            conn.close()
 
     def _init_db(self) -> None:
         with self._lock, self._connect() as conn:

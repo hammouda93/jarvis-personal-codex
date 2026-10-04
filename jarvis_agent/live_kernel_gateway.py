@@ -1,0 +1,529 @@
+from __future__ import annotations
+
+import json
+import threading
+import time
+import uuid
+from dataclasses import dataclass
+from typing import Any
+
+from .capability_registry import CapabilityRegistry, DEFAULT_CAPABILITY_REGISTRY
+from .event_bus import BusEvent, MissionEventBus
+from .kernel_contracts import EventKind, KernelRequest, RiskLevel, SyscallKind
+from .kernel_policy import KernelPolicy
+from .native_tools import AgentActionResult
+
+
+@dataclass(frozen=True)
+class LiveCapabilityRoute:
+    tool_name: str
+    agent_id: str
+    capability: str
+    syscall_kind: SyscallKind = SyscallKind.TOOL
+
+
+_TOOL_ROUTES: dict[str, tuple[str, str, SyscallKind]] = {}
+
+
+def _register(
+    names: tuple[str, ...],
+    agent_id: str,
+    capability: str,
+    kind: SyscallKind = SyscallKind.TOOL,
+) -> None:
+    for name in names:
+        _TOOL_ROUTES[name] = (agent_id, capability, kind)
+
+
+_register(
+    ("list_windows", "inspect_active_window", "ground_ui_role", "observe_screen"),
+    "windows", "computer.observe", SyscallKind.OBSERVATION,
+)
+_register(
+    ("open_application", "open_file", "open_folder"),
+    "windows", "computer.files",
+)
+_register(
+    (
+        "activate_window", "click_ui_element", "write_ui_element",
+        "type_text_active_window", "press_key", "close_tab", "close_window",
+        "click_visual_target", "write_visual_target",
+    ),
+    "windows", "computer.interact",
+)
+_register(("open_url",), "browser", "browser.navigate")
+_register(("search_web",), "browser", "browser.search")
+_register(("research_web",), "research", "research.web")
+_register(
+    (
+        "msf_capabilities", "msf_describe_schema", "msf_count_records",
+        "msf_query_records", "msf_readonly_sql", "msf_search_code",
+        "msf_list_routes", "msf_resolve_route",
+    ),
+    "ms_football", "msf.read",
+)
+_register(("msf_prepare_mutation",), "ms_football", "msf.prepare_mutation")
+_register(("msf_commit_mutation",), "ms_football", "msf.commit_mutation")
+_register(
+    ("recall_information", "search_agent_knowledge", "agent_knowledge_stats"),
+    "memory", "memory.read", SyscallKind.MEMORY,
+)
+_register(
+    ("remember_information", "save_verified_skill", "save_feedback_lesson"),
+    "memory", "memory.write", SyscallKind.MEMORY,
+)
+_register(
+    ("get_current_time", "list_connectors", "reset_conversation_context", "return_to_standby"),
+    "interaction", "interaction.session",
+)
+
+_CONNECTOR_ROUTES = {
+    "gmail": {
+        "connector_read": ("communications", "communications.read"),
+        "connector_write": ("communications", "communications.compose"),
+        "connector_external": ("communications", "communications.send"),
+    },
+    "whatsapp": {
+        "connector_read": ("communications", "communications.read"),
+        "connector_write": ("communications", "communications.compose"),
+        "connector_external": ("communications", "communications.send"),
+    },
+    "instagram": {
+        "connector_read": ("communications", "communications.read"),
+        "connector_write": ("communications", "communications.compose"),
+        "connector_external": ("communications", "communications.send"),
+    },
+    "google_calendar": {
+        "connector_read": ("personal_admin", "personal_admin.read"),
+        "connector_external": ("personal_admin", "personal_admin.write"),
+    },
+    "google_drive": {
+        "connector_read": ("data", "data.read"),
+        "connector_write": ("data", "data.write"),
+        "connector_external": ("data", "data.share"),
+    },
+    "github": {
+        "connector_read": ("developer", "developer.inspect"),
+        "connector_external": ("developer", "developer.publish"),
+    },
+}
+
+
+class RuntimeCapabilityResolver:
+    """Explicit tool -> agent/capability mapping for the live runtime."""
+
+    def resolve(
+        self,
+        tool_name: str,
+        arguments: dict[str, Any] | None = None,
+    ) -> LiveCapabilityRoute | None:
+        name = str(tool_name or "").strip()
+        raw = _TOOL_ROUTES.get(name)
+        if raw is None and name in {
+            "connector_read", "connector_write", "connector_external"
+        }:
+            connector_id = str(
+                dict(arguments or {}).get("connector_id") or ""
+            ).strip()
+            dynamic = _CONNECTOR_ROUTES.get(connector_id, {}).get(name)
+            if dynamic is None:
+                return None
+            agent_id, capability = dynamic
+            return LiveCapabilityRoute(
+                tool_name=name,
+                agent_id=agent_id,
+                capability=capability,
+                syscall_kind=SyscallKind.CONNECTOR,
+            )
+        if raw is None:
+            return None
+        agent_id, capability, kind = raw
+        return LiveCapabilityRoute(
+            tool_name=name,
+            agent_id=agent_id,
+            capability=capability,
+            syscall_kind=kind,
+        )
+
+
+@dataclass
+class GovernanceTurn:
+    mission_id: str
+    user_text: str
+    started_at: float
+
+
+class KernelGovernedToolRegistry:
+    """Synchronous Kernel policy gate around the existing native executor.
+
+    This deliberately reuses the current executor instead of creating a second
+    automation engine. Its authority is limited to agent/capability/tool/risk
+    authorization and approval requirements.
+    """
+
+    def __init__(
+        self,
+        delegate,
+        *,
+        registry: CapabilityRegistry | None = None,
+        policy: KernelPolicy | None = None,
+        resolver: RuntimeCapabilityResolver | None = None,
+        event_bus: MissionEventBus | None = None,
+        fail_closed: bool = True,
+        scheduler=None,
+    ):
+        self.delegate = delegate
+        self.registry = registry or DEFAULT_CAPABILITY_REGISTRY
+        self.policy = policy or KernelPolicy(self.registry)
+        self.resolver = resolver or RuntimeCapabilityResolver()
+        self.event_bus = event_bus
+        self.fail_closed = bool(fail_closed)
+        self.scheduler = scheduler
+        self._local = threading.local()
+
+    def __getattr__(self, name: str):
+        return getattr(self.delegate, name)
+
+    def ollama_tools(self):
+        return self.delegate.ollama_tools()
+
+    def openai_tools(self):
+        return self.delegate.openai_tools()
+
+    def begin_turn(self, user_text: str) -> str:
+        mission_id = "live_" + uuid.uuid4().hex
+        self._local.turn = GovernanceTurn(
+            mission_id=mission_id,
+            user_text=str(user_text or "")[:3000],
+            started_at=time.time(),
+        )
+        return mission_id
+
+    def _turn(self) -> GovernanceTurn:
+        turn = getattr(self._local, "turn", None)
+        if turn is None:
+            self.begin_turn("")
+            turn = self._local.turn
+        return turn
+
+    def _request(
+        self,
+        route: LiveCapabilityRoute,
+        arguments: dict[str, Any] | None,
+    ) -> KernelRequest:
+        turn = self._turn()
+        return KernelRequest(
+            request_id="req_" + uuid.uuid4().hex,
+            mission_id=turn.mission_id,
+            syscall_kind=route.syscall_kind,
+            capability=route.capability,
+            agent_id=route.agent_id,
+            payload={
+                "tool_name": route.tool_name,
+                "arguments": dict(arguments or {}),
+            },
+            user_id="local-user",
+            created_at=time.time(),
+        )
+
+    def _emit(
+        self,
+        kind: EventKind,
+        request: KernelRequest,
+        *,
+        success: bool | None = None,
+        payload: dict[str, Any] | None = None,
+    ) -> None:
+        if self.event_bus is None:
+            return
+        try:
+            self.event_bus.publish(
+                BusEvent(
+                    kind=kind.value,
+                    mission_id=request.mission_id,
+                    agent_id=request.agent_id,
+                    component="live_kernel_governance",
+                    success=success,
+                    payload={
+                        "request_id": request.request_id,
+                        "capability": request.capability,
+                        **dict(payload or {}),
+                    },
+                )
+            )
+        except Exception:
+            pass
+
+    def _decision(
+        self,
+        name: str,
+        arguments: dict[str, Any] | None = None,
+    ):
+        route = self.resolver.resolve(name, arguments)
+        if route is None:
+            return None, None, None
+        request = self._request(route, arguments)
+        return route, request, self.policy.authorize(request)
+
+    def requires_confirmation(self, name: str) -> bool:
+        if self.delegate.requires_confirmation(name):
+            return True
+        route = self.resolver.resolve(name)
+        if route is None:
+            return False
+        request = self._request(route, {})
+        decision = self.policy.authorize(request)
+        return bool(decision.allowed and decision.requires_approval)
+
+    @staticmethod
+    def _blocked(
+        name: str,
+        *,
+        reason: str,
+        route: LiveCapabilityRoute | None = None,
+        risk: RiskLevel | None = None,
+    ) -> AgentActionResult:
+        return AgentActionResult(
+            name=name,
+            success=False,
+            message=(
+                "Le Kernel a bloqué cet outil car il n'est pas autorisé "
+                "dans le périmètre actuel."
+            ),
+            detail=json.dumps(
+                {
+                    "kernel_governance": True,
+                    "allowed": False,
+                    "reason": reason,
+                    "agent_id": route.agent_id if route else "",
+                    "capability": route.capability if route else "",
+                    "risk": risk.value if risk else "",
+                    "verified": False,
+                },
+                ensure_ascii=False,
+            ),
+        )
+
+    def execute(
+        self,
+        name: str,
+        arguments: dict[str, Any] | None,
+        *,
+        approved: bool = False,
+    ) -> AgentActionResult:
+        tool_name = str(name or "").strip()
+        route, request, decision = self._decision(tool_name, arguments)
+        if route is None or request is None or decision is None:
+            if self.fail_closed:
+                return self._blocked(tool_name, reason="unmapped_live_tool")
+            return self.delegate.execute(
+                tool_name, arguments, approved=approved
+            )
+
+        self._emit(
+            EventKind.AGENT_SELECTED,
+            request,
+            payload={
+                "tool_name": tool_name,
+                "agent_id": route.agent_id,
+                "reason": "capability_manifest",
+            },
+        )
+
+        if not decision.allowed:
+            self._emit(
+                EventKind.SYSCALL_COMPLETED,
+                request,
+                success=False,
+                payload={
+                    "tool_name": tool_name,
+                    "status": "rejected",
+                    "reason": decision.reason,
+                },
+            )
+            return self._blocked(
+                tool_name,
+                reason=decision.reason,
+                route=route,
+                risk=decision.risk,
+            )
+
+        if decision.requires_approval and not approved:
+            self._emit(
+                EventKind.APPROVAL_REQUESTED,
+                request,
+                payload={
+                    "tool_name": tool_name,
+                    "risk": decision.risk.value,
+                    "source": "live_kernel_policy",
+                },
+            )
+            return AgentActionResult(
+                name=tool_name,
+                success=False,
+                message="Cette action nécessite votre confirmation explicite.",
+                detail=json.dumps(
+                    {
+                        "kernel_governance": True,
+                        "allowed": True,
+                        "approval_required": True,
+                        "agent_id": route.agent_id,
+                        "capability": route.capability,
+                        "risk": decision.risk.value,
+                        "verified": False,
+                    },
+                    ensure_ascii=False,
+                ),
+            )
+
+        scheduler_response = None
+        if self.scheduler is not None:
+            self._emit(
+                EventKind.SYSCALL_QUEUED,
+                request,
+                payload={
+                    "tool_name": tool_name,
+                    "risk": decision.risk.value,
+                    "approved": bool(approved),
+                },
+            )
+            try:
+                self.scheduler.start(request)
+            except Exception as exc:
+                self._emit(
+                    EventKind.SYSCALL_COMPLETED,
+                    request,
+                    success=False,
+                    payload={
+                        "tool_name": tool_name,
+                        "status": "scheduler_failed",
+                        "error": f"{type(exc).__name__}: {exc}"[:500],
+                    },
+                )
+                return AgentActionResult(
+                    name=tool_name,
+                    success=False,
+                    message=(
+                        "Le Kernel n'a pas pu planifier cette action "
+                        "de manière sûre."
+                    ),
+                    detail=json.dumps(
+                        {
+                            "kernel_governance": True,
+                            "scheduler": True,
+                            "reason": "scheduler_start_failed",
+                            "error": str(exc)[:500],
+                            "verified": False,
+                        },
+                        ensure_ascii=False,
+                    ),
+                )
+
+        self._emit(
+            EventKind.SYSCALL_STARTED,
+            request,
+            payload={
+                "tool_name": tool_name,
+                "risk": decision.risk.value,
+                "approved": bool(approved),
+                "scheduler": self.scheduler is not None,
+            },
+        )
+        try:
+            result = self.delegate.execute(
+                tool_name, arguments, approved=approved
+            )
+        except Exception as exc:
+            if self.scheduler is not None:
+                self.scheduler.fail_exception(request.request_id, exc)
+            self._emit(
+                EventKind.SYSCALL_COMPLETED,
+                request,
+                success=False,
+                payload={
+                    "tool_name": tool_name,
+                    "risk": decision.risk.value,
+                    "approved": bool(approved),
+                    "status": "exception",
+                    "error": f"{type(exc).__name__}: {exc}"[:500],
+                },
+            )
+            raise
+
+        if self.scheduler is not None:
+            scheduler_response = self.scheduler.complete(
+                request.request_id,
+                success=result.success,
+                result={
+                    "tool_name": tool_name,
+                    "verified": bool(result.success),
+                },
+                error="" if result.success else str(result.detail or "")[:1200],
+            )
+
+        completed_payload = {
+            "tool_name": tool_name,
+            "risk": decision.risk.value,
+            "approved": bool(approved),
+            "status": "succeeded" if result.success else "failed",
+            "scheduler": self.scheduler is not None,
+        }
+        if scheduler_response is not None:
+            completed_payload.update(
+                {
+                    "waiting_ms": scheduler_response.waiting_ms,
+                    "turnaround_ms": scheduler_response.turnaround_ms,
+                }
+            )
+        self._emit(
+            EventKind.SYSCALL_COMPLETED,
+            request,
+            success=result.success,
+            payload=completed_payload,
+        )
+        return result
+
+
+class KernelGovernanceRuntime:
+    """Bind a policy mission identity to one authoritative user turn."""
+
+    def __init__(self, delegate, tools: KernelGovernedToolRegistry):
+        self.delegate = delegate
+        self.tools = tools
+        self._startup_recovery_logged = False
+        self.event_bus = getattr(delegate, "event_bus", None) or tools.event_bus
+        self.model = getattr(delegate, "model", "")
+        self.provider_name = getattr(delegate, "provider_name", "")
+
+    def __getattr__(self, name: str):
+        return getattr(self.delegate, name)
+
+    def warm_up(self, *, log=None) -> None:
+        return self.delegate.warm_up(log=log)
+
+    def reset(self) -> None:
+        return self.delegate.reset()
+
+    def run(self, user_text: str, *, log=None, phase=None):
+        mission_id = self.tools.begin_turn(user_text)
+        scheduler_enabled = self.tools.scheduler is not None
+        if log:
+            log(
+                "[KERNEL_LIVE] governance=1 "
+                f"mission_id={mission_id} authority=policy+execution "
+                f"scheduler={int(scheduler_enabled)}"
+            )
+            if scheduler_enabled and not self._startup_recovery_logged:
+                summary = self.tools.scheduler.startup_recovery_summary()
+                data = summary.as_dict()
+                if (
+                    data["running_uncertain_count"]
+                    or data["queued_safe_to_retry_count"]
+                ):
+                    log(
+                        "[KERNEL_RECOVERY_REQUIRED] "
+                        f"running_uncertain={data['running_uncertain_count']} "
+                        f"queued_safe_to_retry={data['queued_safe_to_retry_count']}"
+                    )
+                self._startup_recovery_logged = True
+        return self.delegate.run(user_text, log=log, phase=phase)

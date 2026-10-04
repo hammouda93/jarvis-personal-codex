@@ -151,6 +151,54 @@ class Settings:
         "JARVIS_STRUCTURED_TRACING_ENABLED",
         False,
     )
+    runtime_observability_enabled: bool = _bool(
+        "JARVIS_RUNTIME_OBSERVABILITY_ENABLED", False,
+    )
+    semantic_missions_enabled: bool = _bool("JARVIS_SEMANTIC_MISSIONS_ENABLED", False)
+    semantic_missions_dir: str = (os.getenv("JARVIS_SEMANTIC_MISSIONS_DIR") or "").strip()
+    live_kernel_governance_enabled: bool = (
+        False
+        if compatibility_baseline
+        else _bool("JARVIS_LIVE_KERNEL_GOVERNANCE_ENABLED", True)
+    )
+    live_kernel_fail_closed: bool = _bool(
+        "JARVIS_LIVE_KERNEL_FAIL_CLOSED", True
+    )
+    live_kernel_scheduler_enabled: bool = (
+        False
+        if compatibility_baseline
+        else _bool("JARVIS_LIVE_KERNEL_SCHEDULER_ENABLED", True)
+    )
+    live_kernel_state_dir: str = (
+        os.getenv("JARVIS_LIVE_KERNEL_STATE_DIR") or ""
+    ).strip()
+    connector_runtime_enabled: bool = (
+        False
+        if compatibility_baseline
+        else _bool("JARVIS_CONNECTOR_RUNTIME_ENABLED", True)
+    )
+    recovery_guard_enabled: bool = (
+        False
+        if compatibility_baseline
+        else _bool("JARVIS_RECOVERY_GUARD_ENABLED", True)
+    )
+    recovery_max_tool_calls: int = _int(
+        "JARVIS_RECOVERY_MAX_TOOL_CALLS", 18
+    )
+    recovery_max_consecutive_failures: int = _int(
+        "JARVIS_RECOVERY_MAX_CONSECUTIVE_FAILURES", 4
+    )
+    recovery_max_same_tool_calls: int = _int(
+        "JARVIS_RECOVERY_MAX_SAME_TOOL_CALLS", 7
+    )
+    verify_app_launch_enabled: bool = (
+        False
+        if compatibility_baseline
+        else _bool("JARVIS_VERIFY_APP_LAUNCH", True)
+    )
+    app_launch_verify_timeout_s: float = _float(
+        "JARVIS_APP_LAUNCH_VERIFY_TIMEOUT_S", 4.0
+    )
     model_telemetry_enabled: bool = _bool(
         "JARVIS_MODEL_TELEMETRY_ENABLED",
         False,
@@ -231,6 +279,21 @@ class Settings:
         os.getenv("JARVIS_OPENAI_REASONING_EFFORT") or "low"
     ).strip()
     openai_web_search: bool = _bool("JARVIS_OPENAI_WEB_SEARCH", True)
+
+    # Provider-neutral read-only web research. This never opens a browser.
+    research_provider: str = (
+        os.getenv("JARVIS_RESEARCH_PROVIDER") or "auto"
+    ).strip().lower()
+    research_timeout_s: float = _float("JARVIS_RESEARCH_TIMEOUT_S", 12.0)
+    research_max_results: int = _int("JARVIS_RESEARCH_MAX_RESULTS", 6)
+    research_groq_model: str = (
+        os.getenv("JARVIS_RESEARCH_GROQ_MODEL") or "openai/gpt-oss-120b"
+    ).strip()
+    exa_api_key: str = (os.getenv("EXA_API_KEY") or "").strip()
+    exa_base_url: str = (
+        os.getenv("EXA_BASE_URL") or "https://api.exa.ai"
+    ).strip().rstrip("/")
+
     planner_provider: str = (
         os.getenv("JARVIS_PLANNER_PROVIDER") or "ollama"
     ).strip()
