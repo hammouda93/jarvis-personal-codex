@@ -47,3 +47,6 @@ dist/
 *.tmp
 *.bak
 *.zip
+
+# Locally generated Windows launcher (source and build script are tracked).
+/Jarvis.exe
