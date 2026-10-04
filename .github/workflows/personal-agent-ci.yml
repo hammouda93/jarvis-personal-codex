@@ -59,15 +59,19 @@ jobs:
 
 
   full-regression:
-    name: Full historical regression (Windows)
+    name: Full historical regression (Windows / Python ${{ matrix.python-version }})
     needs: architecture-contracts
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.12"]
     runs-on: windows-latest
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.9"
+          python-version: ${{ matrix.python-version }}
           cache: pip
       - name: Create project virtual environment
         shell: pwsh
